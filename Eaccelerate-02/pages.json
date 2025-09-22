@@ -1,0 +1,53 @@
+{
+	"globalStyle": {
+		"navigationBarTextStyle": "white",
+		"navigationBarTitleText": "SecureVPN",
+		"navigationBarBackgroundColor": "#6366F1",
+		"backgroundColor": "#f8f9fa",
+		"enablePullDownRefresh": false,
+		"backgroundTextStyle": "dark",
+		"navigationStyle": "custom",
+		"app-plus": {
+			"titleNView": false
+		}
+	},
+	"pages": [{
+			"path": "pages/index/index",
+			"style": {
+				"navigationBarTitleText": "SecureVPN",
+				"enablePullDownRefresh": false,
+				"app-plus": {
+					"bounce": "vertical"
+				}
+			}
+		},
+		{
+			"path": "pages/login/login",
+			"style": {
+				"navigationStyle": "default",
+				"navigationBarTitleText": "登录",
+				"navigationBarBackgroundColor": "#6366F1",
+				"navigationBarTextStyle": "white",
+				"enablePullDownRefresh": false,
+				"app-plus": {
+					"bounce": "none"
+				}
+			}
+		}
+	],
+	"easycom": {
+		"autoscan": true,
+		"custom": {
+			"^vpn-(.*)": "@/components/vpn-control.vue",
+			"^node-list": "@/components/node-list.vue",
+			"^app-select": "@/components/app-select.vue"
+		}
+	},
+	"condition": {
+		"current": 0,
+		"list": [{
+			"name": "登录页",
+			"path": "pages/login/login"
+		}]
+	}
+}
