@@ -9,7 +9,6 @@
           {{isLoggedIn ? '退出登录' : '登录'}}
         </button>
       </view>
-      <!-- <text class="app-name">e加速</text> -->
     </view>
 
     <!-- VPN连接状态 -->
@@ -20,7 +19,8 @@
       </view>
       <view class="connection-info">{{connectionInfo}}</view>
       <view class="connection-time">{{connectionTime}}</view>
-      <button class="btn-connect" :class="{'connecting': isConnecting}" @click="toggleVPN" :disabled="!isLoggedIn || nodes.length === 0">
+      <button class="btn-connect" :class="{'connecting': isConnecting}" @click="toggleVPN" 
+              :disabled="!isLoggedIn || availableNodes.length === 0 || selectedNode === null">
         {{connectButtonText}}
       </button>
     </view>
@@ -34,21 +34,39 @@
           <uni-icons type="refresh" size="16" color="#4361ee"></uni-icons>
         </view>
       </view>
+      
+      <view class="nodes-stats">
+        <text class="stats-text">可用节点: {{availableNodes.length}}/{{nodes.length}}</text>
+      </view>
+      
       <scroll-view class="node-list" scroll-y>
-        <view v-for="(node, index) in nodes" :key="index" 
-              class="node-item" :class="{'selected': selectedNode === index}"
-              @click="selectNode(index)">
+        <view v-for="(node, index) in nodes" :key="node._id" 
+              class="node-item" 
+              :class="{
+                'selected': selectedNode === index,
+                'offline': !node.isAvailable,
+                'no-auth': !node.hasAuth
+              }"
+              @click="selectNode(index)"
+              @longpress="showNodeDetails(index)">
           <view class="node-info">
             <view class="node-flag">{{getCountryFlag(node.tag)}}</view>
             <view class="node-details">
               <text class="node-name">{{node.tag}}</text>
               <text class="node-location">{{node.host}}:{{node.port}}</text>
+              <text class="node-expire">{{node.expireText}}</text>
             </view>
           </view>
-          <view class="node-ping">
-            <text :class="node.status ? 'status-online' : 'status-offline'">
+          <view class="node-status">
+            <view class="status-indicators">
+              <text :class="node.status ? 'status-online' : 'status-offline'">
                 {{node.status ? '在线' : '离线'}}
               </text>
+              <text v-if="!node.hasAuth" class="status-noauth">无认证</text>
+            </view>
+            <view v-if="selectedNode === index" class="selected-indicator">
+              <uni-icons type="checkmark" size="16" color="#4361ee"></uni-icons>
+            </view>
           </view>
         </view>
         <view v-if="nodes.length === 0" class="empty-state">
@@ -74,37 +92,17 @@
       </view>
     </view>
 
-    <!-- 连接信息 -->
-<!--    <view v-if="selectedNode !== null && nodes[selectedNode]" class="section connection-details">
+    <!-- 使用提示 -->
+    <view class="section tips-section">
       <view class="section-header">
-        <text class="section-title">连接信息</text>
+        <text class="section-title">使用提示</text>
       </view>
-      <view class="info-item">
-        <text class="info-label">服务器:</text>
-        <text class="info-value">{{nodes[selectedNode].host}}:{{nodes[selectedNode].port}}</text>
+      <view class="tips-content">
+        <text class="tip-item">• 请选择状态为"在线"且有认证信息的节点</text>
+        <text class="tip-item">• 长按节点可查看详细信息</text>
+        <text class="tip-item">• 连接成功后，所有应用流量将通过VPN</text>
       </view>
-      <view class="info-item">
-        <text class="info-label">账号:</text>
-        <text class="info-value">{{nodes[selectedNode].account}}</text>
-      </view>
-      <view class="info-item">
-        <text class="info-label">密码:</text>
-        <text class="info-value">{{nodes[selectedNode].password}}</text>
-      </view>
-      <view class="info-item">
-        <text class="info-label">协议:</text>
-        <text class="info-value">SOCKS5</text>
-      </view>
-      <view class="info-item">
-        <text class="info-label">到期时间:</text>
-        <text class="info-value">{{formatDate(nodes[selectedNode].expire)}}</text>
-      </view>
-    </view> -->
-
-    <!-- 底部信息 -->
-    <!-- <view class="footer"> -->
-      <!-- <text class="footer-text">© 2025 VPN助手 | 安全稳定的网络加速服务</text> -->
-    <!-- </view> -->
+    </view>
   </view>
 </template>
 
@@ -112,6 +110,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { onShow, onReachBottom, onPullDownRefresh } from '@dcloudio/uni-app'
 import UniIcons from '@/components/uni-icons/uni-icons.vue'
+import androidVpnManager from '@/utils/android-vpn.js'
 
 // 响应式数据
 const isLoggedIn = ref(false)
@@ -123,7 +122,7 @@ const statusText = ref('未连接')
 const connectionInfo = ref('--')
 const connectionTime = ref('--')
 const connectButtonText = ref('连接VPN')
-const selectedNode = ref(0)
+const selectedNode = ref(null)
 const selectedApps = ref([0])
 const nodes = ref([])
 const connectionSeconds = ref(0)
@@ -131,7 +130,7 @@ const connectingInterval = ref(null)
 
 // 分页相关状态
 const page = ref(1)
-const pageSize = ref(10)
+const pageSize = ref(20)
 const isBottom = ref(false)
 const isLoading = ref(false)
 
@@ -154,52 +153,104 @@ const statusClass = computed(() => {
   return 'disconnected'
 })
 
+// 过滤可用的节点（在线且未过期）
+const availableNodes = computed(() => {
+  return nodes.value.filter(node => {
+    // 检查节点状态和过期时间
+    const isOnline = node.status === true;
+    const isNotExpired = new Date(node.expire) > new Date();
+    return isOnline && isNotExpired;
+  });
+});
+
 // 生命周期
 onMounted(() => {
-  checkLoginStatus()
+  checkLoginStatus();
+  setupVpn();
 })
 
 onShow(() => {
   if (isLoggedIn.value) {
-    page.value = 1
-    isBottom.value = false
-    fetchNodes(false)
+    page.value = 1;
+    isBottom.value = false;
+    fetchNodes(false);
   }
 })
 
 // 组件卸载时清理定时器
 onUnmounted(() => {
   if (connectingInterval.value) {
-    clearInterval(connectingInterval.value)
-    connectingInterval.value = null
+    clearInterval(connectingInterval.value);
+    connectingInterval.value = null;
   }
 })
+
+// VPN功能初始化
+const setupVpn = async () => {
+  const isAndroid = uni.getSystemInfoSync().platform === 'android';
+  
+  if (isAndroid) {
+    await androidVpnManager.initialize();
+    
+    // 监听VPN状态变化
+    androidVpnManager.onStatusUpdate((status) => {
+      console.log('VPN状态更新:', status);
+      
+      if (status.connected) {
+        isConnected.value = true;
+        statusText.value = '已连接';
+        connectButtonText.value = '断开连接';
+        
+        if (selectedNode.value !== null) {
+          const selectedNodeData = nodes.value[selectedNode.value];
+          connectionInfo.value = `${selectedNodeData.tag} · ${selectedNodeData.host}:${selectedNodeData.port}`;
+        }
+        
+        // 开始计时
+        connectionSeconds.value = 0;
+        updateConnectionTime();
+        connectingInterval.value = setInterval(updateConnectionTime, 1000);
+      } else {
+        isConnected.value = false;
+        statusText.value = '未连接';
+        connectButtonText.value = '连接VPN';
+        connectionInfo.value = '--';
+        connectionTime.value = '--';
+        
+        if (connectingInterval.value) {
+          clearInterval(connectingInterval.value);
+          connectingInterval.value = null;
+        }
+      }
+    });
+  }
+}
 
 // 上拉加载更多
 onReachBottom(() => {
   if (!isBottom.value && !isLoading.value) {
-    page.value++
-    fetchNodes(true)
+    page.value++;
+    fetchNodes(true);
   }
 })
 
 // 下拉刷新
 onPullDownRefresh(async () => {
-  page.value = 1
-  isBottom.value = false
-  isLoading.value = false
-  await fetchNodes(false)
-  uni.stopPullDownRefresh()
+  page.value = 1;
+  isBottom.value = false;
+  isLoading.value = false;
+  await fetchNodes(false);
+  uni.stopPullDownRefresh();
 })
 
 // 方法
 const checkLoginStatus = () => {
-  const storedToken = uni.getStorageSync('token')
-  const storedUsername = uni.getStorageSync('username')
+  const storedToken = uni.getStorageSync('token');
+  const storedUsername = uni.getStorageSync('username');
   if (storedToken && storedUsername) {
-    isLoggedIn.value = true
-    username.value = storedUsername
-    token.value = storedToken
+    isLoggedIn.value = true;
+    username.value = storedUsername;
+    token.value = storedToken;
   }
 }
 
@@ -208,17 +259,17 @@ const fetchNodes = async (isLoadMore = false) => {
     uni.showToast({
       title: '请先登录',
       icon: 'none'
-    })
-    return
+    });
+    return;
   }
   
-  if (isLoading.value) return
-  isLoading.value = true
+  if (isLoading.value) return;
+  isLoading.value = true;
   
   if (!isLoadMore) {
     uni.showLoading({
       title: '获取节点中...'
-    })
+    });
   }
   
   try {
@@ -232,187 +283,308 @@ const fetchNodes = async (isLoadMore = false) => {
       header: {
         'Authorization': 'Bearer ' + token.value
       }
-    })
+    });
     
     if (res.statusCode === 200 && res.data) {
-      const newNodes = res.data.nodes || res.data
-      const total = res.data.total || 0
+      let newNodes = [];
       
-      if (isLoadMore) {
-        nodes.value = [...nodes.value, ...newNodes]
+      // 适配不同的响应格式
+      if (Array.isArray(res.data)) {
+        newNodes = res.data;
+      } else if (res.data.nodes && Array.isArray(res.data.nodes)) {
+        newNodes = res.data.nodes;
+      } else if (res.data.data && Array.isArray(res.data.data)) {
+        newNodes = res.data.data;
       } else {
-        nodes.value = newNodes
+        newNodes = [];
       }
       
+      // 处理节点数据，添加格式化信息
+      const processedNodes = newNodes.map(node => ({
+        ...node,
+        displayName: node.tag || '未知节点',
+        isAvailable: node.status === true && new Date(node.expire) > new Date(),
+        expireText: formatDate(node.expire),
+        hasAuth: !!(node.account && node.password)
+      }));
+      
+      if (isLoadMore) {
+        nodes.value = [...nodes.value, ...processedNodes];
+      } else {
+        nodes.value = processedNodes;
+        
+        // 自动选择第一个可用节点
+        const firstAvailableIndex = processedNodes.findIndex(node => node.isAvailable);
+        if (firstAvailableIndex !== -1) {
+          selectedNode.value = firstAvailableIndex;
+        } else if (processedNodes.length > 0) {
+          selectedNode.value = 0; // 如果没有可用节点，选择第一个
+        }
+      }
+      
+      const total = res.data.total || newNodes.length;
       if (newNodes.length < pageSize.value || nodes.value.length >= total) {
-        isBottom.value = true
+        isBottom.value = true;
       }
       
       if (!isLoadMore) {
-        uni.hideLoading()
-        uni.showToast({
-          title: '节点获取成功',
-          icon: 'success'
-        })
+        uni.hideLoading();
+        if (newNodes.length > 0) {
+          uni.showToast({
+            title: `获取${newNodes.length}个节点`,
+            icon: 'success'
+          });
+        }
       }
     } else {
-      throw new Error('获取节点失败')
+      throw new Error(res.data?.message || '获取节点失败');
     }
   } catch (error) {
     if (!isLoadMore) {
-      uni.hideLoading()
+      uni.hideLoading();
     }
     uni.showToast({
       title: '获取节点失败',
       icon: 'none'
-    })
-    console.error('获取节点失败:', error)
+    });
+    console.error('获取节点失败:', error);
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
 }
 
 const handleAuth = () => {
   if (isLoggedIn.value) {
     // 退出登录
-    uni.removeStorageSync('token')
-    uni.removeStorageSync('username')
-    isLoggedIn.value = false
-    token.value = ''
-    nodes.value = []
-    
-    // 如果已连接VPN，先断开
-    if (isConnected.value) {
-      toggleVPN()
-    }
-    
-    uni.showToast({
-      title: '已退出登录',
-      icon: 'success'
-    })
+    uni.showModal({
+      title: '确认退出',
+      content: '确定要退出登录吗？',
+      success: (res) => {
+        if (res.confirm) {
+          uni.removeStorageSync('token');
+          uni.removeStorageSync('username');
+          isLoggedIn.value = false;
+          token.value = '';
+          nodes.value = [];
+          selectedNode.value = null;
+          
+          // 如果已连接VPN，先断开
+          if (isConnected.value) {
+            toggleVPN();
+          }
+          
+          uni.showToast({
+            title: '已退出登录',
+            icon: 'success'
+          });
+        }
+      }
+    });
   } else {
     // 跳转到登录页面
     uni.navigateTo({
       url: '/pages/login/login'
-    })
+    });
   }
 }
 
-const toggleVPN = () => {
+const toggleVPN = async () => {
   if (!isLoggedIn.value) {
     uni.showToast({
       title: '请先登录',
       icon: 'none'
-    })
-    return
+    });
+    return;
   }
   
   if (nodes.value.length === 0) {
     uni.showToast({
       title: '暂无可用节点',
       icon: 'none'
-    })
-    return
+    });
+    return;
+  }
+  
+  if (selectedNode.value === null) {
+    uni.showToast({
+      title: '请先选择节点',
+      icon: 'none'
+    });
+    return;
+  }
+  
+  const selectedNodeData = nodes.value[selectedNode.value];
+  
+  // 检查节点是否可用
+  if (!selectedNodeData.isAvailable) {
+    uni.showToast({
+      title: '当前节点不可用',
+      icon: 'none'
+    });
+    return;
+  }
+  
+  // 检查节点是否有认证信息
+  if (!selectedNodeData.hasAuth) {
+    uni.showToast({
+      title: '当前节点缺少认证信息',
+      icon: 'none'
+    });
+    return;
   }
   
   if (isConnected.value) {
     // 断开连接
-    disconnectVPN()
+    await disconnectVPN();
   } else {
     // 连接VPN
-    connectVPN()
+    await connectVPN();
   }
 }
 
-const connectVPN = () => {
-  isConnecting.value = true
-  statusText.value = '连接中...'
-  connectButtonText.value = '连接中'
+const connectVPN = async () => {
+  isConnecting.value = true;
+  statusText.value = '连接中...';
+  connectButtonText.value = '连接中';
   
-  // 先清除可能存在的旧定时器
-  if (connectingInterval.value) {
-    clearInterval(connectingInterval.value)
-    connectingInterval.value = null
+  try {
+    const selectedNodeData = nodes.value[selectedNode.value];
+    
+    if (uni.getSystemInfoSync().platform === 'android') {
+      await androidVpnManager.connect(selectedNodeData);
+      // 状态更新会在监听回调中处理
+    } else {
+      // 模拟连接过程（用于测试）
+      setTimeout(() => {
+        isConnecting.value = false;
+        isConnected.value = true;
+        statusText.value = '已连接';
+        connectButtonText.value = '断开连接';
+        
+        connectionInfo.value = `${selectedNodeData.tag} · ${selectedNodeData.host}:${selectedNodeData.port}`;
+        
+        // 开始计时
+        connectionSeconds.value = 0;
+        updateConnectionTime();
+        connectingInterval.value = setInterval(updateConnectionTime, 1000);
+        
+        uni.showToast({
+          title: 'VPN连接成功',
+          icon: 'success'
+        });
+      }, 2000);
+    }
+  } catch (error) {
+    console.error('VPN连接失败:', error);
+    handleVpnError(error);
   }
-  
-  // 模拟连接过程
-  setTimeout(() => {
-    isConnecting.value = false
-    isConnected.value = true
-    statusText.value = '已连接'
-    connectButtonText.value = '断开连接'
-    
-    const selectedNodeData = nodes.value[selectedNode.value]
-    connectionInfo.value = `${selectedNodeData.tag} · ${selectedNodeData.host}:${selectedNodeData.port}`
-    
-    // 开始计时 - 确保使用正确的间隔时间
-    connectionSeconds.value = 0
-    updateConnectionTime()
-    connectingInterval.value = setInterval(updateConnectionTime, 1000) // 确保是1000毫秒
-    
+}
+
+const disconnectVPN = async () => {
+  try {
+    if (uni.getSystemInfoSync().platform === 'android') {
+      await androidVpnManager.disconnect();
+      // 状态更新会在监听回调中处理
+    } else {
+      // 模拟断开过程（用于测试）
+      isConnected.value = false;
+      statusText.value = '未连接';
+      connectButtonText.value = '连接VPN';
+      connectionInfo.value = '--';
+      connectionTime.value = '--';
+      
+      if (connectingInterval.value) {
+        clearInterval(connectingInterval.value);
+        connectingInterval.value = null;
+      }
+      
+      uni.showToast({
+        title: 'VPN已断开',
+        icon: 'success'
+      });
+    }
+  } catch (error) {
+    console.error('断开VPN失败:', error);
     uni.showToast({
-      title: 'VPN连接成功',
-      icon: 'success'
-    })
-  }, 2000)
+      title: error.message || '断开VPN失败',
+      icon: 'none'
+    });
+  }
 }
 
-const disconnectVPN = () => {
-  isConnected.value = false
-  statusText.value = '未连接'
-  connectButtonText.value = '连接VPN'
-  connectionInfo.value = '--'
-  connectionTime.value = '--'
-  
-  // 确保正确清除定时器
-  if (connectingInterval.value) {
-    clearInterval(connectingInterval.value)
-    connectingInterval.value = null
-  }
+const handleVpnError = (error) => {
+  isConnecting.value = false;
+  isConnected.value = false;
+  statusText.value = '连接失败';
+  connectButtonText.value = '连接VPN';
   
   uni.showToast({
-    title: 'VPN已断开',
-    icon: 'success'
-  })
+    title: error.message || 'VPN连接失败',
+    icon: 'none'
+  });
 }
 
 const updateConnectionTime = () => {
-  connectionSeconds.value++
-  const hours = Math.floor(connectionSeconds.value / 3600)
-  const minutes = Math.floor((connectionSeconds.value % 3600) / 60)
-  const seconds = connectionSeconds.value % 60
+  connectionSeconds.value++;
+  const hours = Math.floor(connectionSeconds.value / 3600);
+  const minutes = Math.floor((connectionSeconds.value % 3600) / 60);
+  const seconds = connectionSeconds.value % 60;
   
   if (hours > 0) {
-    connectionTime.value = `连接时间: ${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
+    connectionTime.value = `连接时间: ${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
   } else {
-    connectionTime.value = `连接时间: ${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
+    connectionTime.value = `连接时间: ${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
   }
 }
 
 const selectNode = (index) => {
-  selectedNode.value = index
-  if (isConnected.value) {
-    const selectedNodeData = nodes.value[index]
-    connectionInfo.value = `${selectedNodeData.tag} · ${selectedNodeData.host}:${selectedNodeData.port}`
+  const node = nodes.value[index];
+  
+  if (!node.isAvailable) {
+    uni.showToast({
+      title: '该节点不可用',
+      icon: 'none'
+    });
+    return;
   }
+  
+  if (!node.hasAuth) {
+    uni.showToast({
+      title: '该节点缺少认证信息',
+      icon: 'none'
+    });
+    return;
+  }
+  
+  selectedNode.value = index;
+  
+  // 如果已连接，更新连接信息
+  if (isConnected.value) {
+    connectionInfo.value = `${node.tag} · ${node.host}:${node.port}`;
+  }
+  
+  uni.showToast({
+    title: `已选择: ${node.tag}`,
+    icon: 'success'
+  });
 }
 
 const toggleAppSelection = (index) => {
   if (index === 7) {
     // 选择全部应用
-    selectedApps.value = [7]
+    selectedApps.value = [7];
   } else {
     if (selectedApps.value.includes(index)) {
       // 取消选择
-      selectedApps.value = selectedApps.value.filter(i => i !== index)
+      selectedApps.value = selectedApps.value.filter(i => i !== index);
       // 如果取消了全部选择，且没有其他选择，则选择全部应用
       if (selectedApps.value.length === 0) {
-        selectedApps.value = [7]
+        selectedApps.value = [7];
       }
     } else {
       // 选择应用，移除"全部应用"选项如果存在
-      selectedApps.value = selectedApps.value.filter(i => i !== 7)
-      selectedApps.value.push(index)
+      selectedApps.value = selectedApps.value.filter(i => i !== 7);
+      selectedApps.value.push(index);
     }
   }
 }
@@ -420,24 +592,60 @@ const toggleAppSelection = (index) => {
 const getCountryFlag = (tag) => {
   // 根据标签返回对应的国旗emoji
   const flagMap = {
-    '测试-001': '🇨🇳',
-    '美国': '🇺🇸',
-    '日本': '🇯🇵',
-    '新加坡': '🇸🇬',
-    '德国': '🇩🇪',
-    '英国': '🇬🇧',
-    '韩国': '🇰🇷'
+    '广东': '🇨🇳',
+    '河间': '🇨🇳',
+    '天津': '🇨🇳',
+    '宁波': '🇨🇳',
+    '蠡县': '🇨🇳',
+    '澄海': '🇨🇳',
+    '凤翔': '🇨🇳'
+  };
+  
+  for (const [key, flag] of Object.entries(flagMap)) {
+    if (tag.includes(key)) {
+      return flag;
+    }
   }
   
-  // return flagMap[tag] || '🌐'
-  return '🌐'
+  return '🌐';
 }
 
 const formatDate = (dateString) => {
-  if (!dateString) return '未知'
+  if (!dateString) return '未知';
   
-  const date = new Date(dateString)
-  return `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')} ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffTime = Math.abs(now - date);
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  
+  if (diffDays <= 30) {
+    return `${diffDays}天后过期`;
+  } else {
+    return `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`;
+  }
+}
+
+// 检查节点详情
+const showNodeDetails = (index) => {
+  const node = nodes.value[index];
+  let content = `服务器: ${node.host}:${node.port}\n`;
+  content += `状态: ${node.status ? '在线' : '离线'}\n`;
+  content += `过期时间: ${formatDate(node.expire)}\n`;
+  
+  if (node.account) {
+    content += `账号: ${node.account}\n`;
+  }
+  
+  if (node.remark) {
+    content += `备注: ${node.remark}`;
+  }
+  
+  uni.showModal({
+    title: node.tag,
+    content: content,
+    showCancel: false,
+    confirmText: '知道了'
+  });
 }
 </script>
 
@@ -459,16 +667,16 @@ const formatDate = (dateString) => {
   
   .user-info {
     display: flex;
-    justify-content: space-between; // 两端对齐
+    justify-content: space-between;
     align-items: center;
     margin-bottom: 20rpx;
-    width: 100%; // 确保占据整个宽度
+    width: 100%;
     
     .welcome-text {
       color: white;
       font-size: 32rpx;
-      flex: 1; // 占据剩余空间
-      margin-right: 20rpx; // 添加右边距
+      flex: 1;
+      margin-right: 20rpx;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
@@ -481,16 +689,8 @@ const formatDate = (dateString) => {
       border-radius: 50rpx;
       padding: 10rpx 20rpx;
       font-size: 24rpx;
-      flex-shrink: 0; // 防止按钮被压缩
+      flex-shrink: 0;
     }
-  }
-  
-  .app-name {
-    color: white;
-    font-size: 40rpx;
-    font-weight: bold;
-    text-align: center;
-    display: block;
   }
 }
 
@@ -593,14 +793,15 @@ const formatDate = (dateString) => {
   }
 }
 
-/* 状态颜色样式 */
-.status-online {
-  color: #4ade80 !important; // 绿色 - 在线状态
-  font-weight: 600;
+/* 节点统计信息 */
+.nodes-stats {
+  margin-bottom: 20rpx;
+  padding: 0 10rpx;
 }
 
-.status-offline {
-  color: #9ca3af !important; // 灰色 - 离线状态
+.stats-text {
+  font-size: 24rpx;
+  color: #666;
 }
 
 .node-list {
@@ -622,9 +823,18 @@ const formatDate = (dateString) => {
       border-radius: 12rpx;
     }
     
+    &.offline {
+      opacity: 0.6;
+    }
+    
+    &.no-auth {
+      border-left: 8rpx solid #fbbf24;
+    }
+    
     .node-info {
       display: flex;
       align-items: center;
+      flex: 1;
       
       .node-flag {
         font-size: 40rpx;
@@ -634,6 +844,7 @@ const formatDate = (dateString) => {
       .node-details {
         display: flex;
         flex-direction: column;
+        flex: 1;
         
         .node-name {
           font-size: 28rpx;
@@ -644,15 +855,46 @@ const formatDate = (dateString) => {
           font-size: 24rpx;
           color: #999;
         }
+        
+        .node-expire {
+          font-size: 22rpx;
+          color: #f59e0b;
+          margin-top: 5rpx;
+        }
       }
     }
     
-    .node-ping {
-      font-size: 24rpx;
-      color: #666;
-      padding: 6rpx 16rpx;
-      background: #f5f5f5;
-      border-radius: 20rpx;
+    .node-status {
+      display: flex;
+      align-items: center;
+      
+      .status-indicators {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 5rpx;
+        
+        .status-online {
+          color: #4ade80;
+          font-weight: 600;
+        }
+        
+        .status-offline {
+          color: #9ca3af;
+        }
+        
+        .status-noauth {
+          font-size: 20rpx;
+          color: #f87171;
+          background: #fef2f2;
+          padding: 4rpx 8rpx;
+          border-radius: 8rpx;
+        }
+      }
+      
+      .selected-indicator {
+        margin-left: 10rpx;
+      }
     }
   }
   
@@ -700,36 +942,20 @@ const formatDate = (dateString) => {
   }
 }
 
-.connection-details {
-  .info-item {
-    display: flex;
-    justify-content: space-between;
-    padding: 15rpx 0;
-    border-bottom: 1rpx solid #f0f0f0;
-    
-    &:last-child {
-      border-bottom: none;
-    }
-    
-    .info-label {
-      font-size: 28rpx;
-      color: #666;
-    }
-    
-    .info-value {
-      font-size: 28rpx;
-      font-weight: 500;
-    }
-  }
+/* 使用提示 */
+.tips-section {
+  background: #f0f5ff;
 }
 
-.footer {
-  padding: 30rpx;
-  text-align: center;
-  
-  .footer-text {
-    font-size: 24rpx;
-    color: rgba(255, 255, 255, 0.7);
-  }
+.tips-content {
+  padding: 0 10rpx;
+}
+
+.tip-item {
+  display: block;
+  font-size: 24rpx;
+  color: #666;
+  margin-bottom: 10rpx;
+  line-height: 1.5;
 }
 </style>

@@ -1,0 +1,17 @@
+{
+  "name": "MyVpnPlugin",
+  "id": "MyVpnPlugin",
+  "version": "1.0.0",
+  "description": "自定义VPN插件",
+  "_dp_type": "nativeplugin",
+  "_dp_nativeplugin": {
+    "android": {
+      "plugins": [{
+        "type": "module",
+        "name": "MyVpnPlugin",
+        "class": "com.mycompany.vpn.MyVpnPlugin"
+      }],
+      "integrateType": "library"
+    }
+  }
+}

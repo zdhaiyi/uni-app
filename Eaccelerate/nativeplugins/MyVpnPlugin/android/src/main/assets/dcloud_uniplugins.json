@@ -1,0 +1,13 @@
+{
+  "nativePlugins": [
+    {
+      "plugins": [
+        {
+          "type": "module",
+          "name": "MyVpnPlugin",
+          "class": "com.mycompany.vpn.MyVpnPlugin"
+        }
+      ]
+    }
+  ]
+}
