@@ -1,0 +1,165 @@
+{
+  "@platforms": [
+    "android",
+    "iPhone",
+    "iPad"
+  ],
+  "id": "__UNI__F09418E",
+  "name": "e加速",
+  "version": {
+    "name": "1.0.0",
+    "code": "100"
+  },
+  "description": "安全稳定的VPN连接助手",
+  "developer": {
+    "name": "",
+    "email": "",
+    "url": ""
+  },
+  "permissions": {
+    "UniNView": {
+      "description": "UniNView原生渲染"
+    }
+  },
+  "plus": {
+    "useragent": {
+      "value": "uni-app",
+      "concatenate": true
+    },
+    "splashscreen": {
+      "target": "id:1",
+      "autoclose": true,
+      "waiting": true,
+      "delay": 0
+    },
+    "popGesture": "close",
+    "launchwebview": {
+      "render": "always",
+      "id": "1",
+      "kernel": "WKWebview"
+    },
+    "uniStatistics": {
+      "enable": false
+    },
+    "usingComponents": true,
+    "nvueStyleCompiler": "uni-app",
+    "compilerVersion": 3,
+    "distribute": {
+      "icons": {
+        "android": {
+          "hdpi": "static/logo.png",
+          "xhdpi": "static/logo.png",
+          "xxhdpi": "static/logo.png",
+          "xxxhdpi": "static/logo.png"
+        },
+        "ios": {
+          "appstore": "",
+          "iphone": {
+            "app@2x": "static/logo.png",
+            "app@3x": "static/logo.png",
+            "spotlight@2x": "static/logo.png",
+            "spotlight@3x": "static/logo.png",
+            "settings@2x": "static/logo.png",
+            "settings@3x": "static/logo.png",
+            "notification@2x": "static/logo.png",
+            "notification@3x": "static/logo.png"
+          },
+          "ipad": {
+            "app": "static/logo.png",
+            "app@2x": "static/logo.png",
+            "proapp@2x": "static/logo.png",
+            "spotlight": "static/logo.png",
+            "spotlight@2x": "static/logo.png",
+            "settings": "static/logo.png",
+            "settings@2x": "static/logo.png",
+            "notification": "static/logo.png",
+            "notification@2x": "static/logo.png"
+          }
+        }
+      },
+      "google": {
+        "minSdkVersion": 21,
+        "targetSdkVersion": 33,
+        "abiFilters": [
+          "armeabi-v7a",
+          "arm64-v8a"
+        ],
+        "permissions": [
+          "<uses-permission android:name=\"android.permission.CHANGE_NETWORK_STATE\"/>",
+          "<uses-permission android:name=\"android.permission.INTERNET\"/>",
+          "<uses-permission android:name=\"android.permission.ACCESS_WIFI_STATE\"/>",
+          "<uses-permission android:name=\"android.permission.ACCESS_NETWORK_STATE\"/>",
+          "<uses-permission android:name=\"android.permission.FOREGROUND_SERVICE\"/>",
+          "<uses-permission android:name=\"android.permission.WAKE_LOCK\"/>",
+          "<uses-permission android:name=\"android.permission.BIND_VPN_SERVICE\"/>"
+        ]
+      },
+      "apple": {
+        "dSYMs": false
+      },
+      "plugins": {
+        "audio": {
+          "mp3": {
+            "description": "Android平台录音支持MP3格式文件"
+          }
+        }
+      }
+    },
+    "nativePlugins": {
+      "MyVpnPlugin": {
+        "hooksClass": "",
+        "plugins": [
+          {
+            "type": "module",
+            "name": "MyVpnPlugin",
+            "class": "com.mycompany.vpn.MyVpnPlugin"
+          }
+        ],
+        "integrateType": "aar",
+        "minSdkVersion": 21,
+        "useAndroidX": true,
+        "permissions": [
+          "<uses-permission android:name=\"android.permission.INTERNET\"/>",
+          "<uses-permission android:name=\"android.permission.ACCESS_NETWORK_STATE\"/>",
+          "<uses-permission android:name=\"android.permission.ACCESS_WIFI_STATE\"/>",
+          "<uses-permission android:name=\"android.permission.BIND_VPN_SERVICE\"/>",
+          "<uses-permission android:name=\"android.permission.FOREGROUND_SERVICE\"/>"
+        ]
+      }
+    },
+    "statusbar": {
+      "immersed": "supportedDevice",
+      "style": "light",
+      "background": "#4361ee"
+    },
+    "allowsInlineMediaPlayback": true,
+    "uni-app": {
+      "control": "uni-v3",
+      "vueVersion": "3",
+      "compilerVersion": "4.76",
+      "nvueCompiler": "uni-app",
+      "renderer": "auto",
+      "nvue": {
+        "flex-direction": "column"
+      },
+      "nvueLaunchMode": "normal",
+      "webView": {
+        "minUserAgentVersion": "49.0"
+      }
+    }
+  },
+  "app-harmony": {
+    "useragent": {
+      "value": "uni-app",
+      "concatenate": true
+    },
+    "uniStatistics": {
+      "enable": false
+    }
+  },
+  "locale": "zh-Hans",
+  "screenOrientation": [
+    "portrait-primary"
+  ],
+  "launch_path": "__uniappview.html"
+}

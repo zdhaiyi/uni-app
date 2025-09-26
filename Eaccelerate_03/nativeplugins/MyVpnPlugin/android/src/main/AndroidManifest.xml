@@ -13,9 +13,14 @@
     <!-- 前台服务权限（Android 9.0+需要） -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     
-    <!-- 可选权限（根据实际需求添加） -->
+    <!-- 防止休眠 -->
     <uses-permission android:name="android.permission.WAKE_LOCK" />
+    
+    <!-- 振动权限（可选，用于通知） -->
     <uses-permission android:name="android.permission.VIBRATE" />
+    
+    <!-- 网络状态变更权限 -->
+    <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE" />
 
     <application>
         <!-- 声明VPN服务 -->

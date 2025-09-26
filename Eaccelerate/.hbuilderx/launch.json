@@ -2,9 +2,9 @@
     "version" : "1.0",
     "configurations" : [
         {
-            "customPlaygroundType" : "device",
+            "customPlaygroundType" : "local",
             "localRepoPath" : "D:/uniapp_node/Eaccelerate",
-            "playground" : "standard",
+            "playground" : "custom",
             "type" : "uni-app:app-android"
         }
     ]

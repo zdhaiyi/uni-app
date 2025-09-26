@@ -1,17 +1,44 @@
 {
-	"name": "MyVpnPlugin",
-	"id": "MyVpnPlugin",
+	"name": "eaccelerate",
 	"version": "1.0.0",
-	"description": "自定义VPN插件",
-	"_dp_type": "nativeplugin",
-	"_dp_nativeplugin": {
-		"android": {
-			"integrateType": "aar",
-			"plugins": [{
-				"type": "module",
-				"name": "MyVpnPlugin",
-				"class": "com.mycompany.vpn.MyVpnPlugin"
-			}]
+	"description": "VPN连接助手",
+	"main": "main.js",
+	"scripts": {
+		"serve": "npm run dev:h5",
+		"build": "npm run build:h5",
+		"dev:h5": "cross-env NODE_ENV=development UNI_PLATFORM=h5 vue-cli-service uni-serve",
+		"build:h5": "cross-env NODE_ENV=production UNI_PLATFORM=h5 vue-cli-service uni-build",
+		"dev:app-plus": "cross-env NODE_ENV=development UNI_PLATFORM=app-plus vue-cli-service uni-build --watch",
+		"build:app-plus": "cross-env NODE_ENV=production UNI_PLATFORM=app-plus vue-cli-service uni-build"
+	},
+	"dependencies": {
+		"@dcloudio/uni-app": "2.0.2-30920201231002",
+		"@dcloudio/uni-app-plus": "2.0.2-30920201231002",
+		"@dcloudio/uni-h5": "2.0.2-30920201231002",
+		"@dcloudio/uni-mp-weixin": "2.0.2-30920201231002",
+		"core-js": "^3.6.5",
+		"vue": "^2.6.14",
+		"vuex": "^3.6.2"
+	},
+	"devDependencies": {
+		"@dcloudio/vue-cli-plugin-uni": "2.0.2-30920201231002",
+		"@vue/cli-plugin-babel": "4.5.15",
+		"@vue/cli-service": "4.5.15",
+		"cross-env": "7.0.3",
+		"vue-template-compiler": "^2.6.14"
+	},
+	"uni-app": {
+		"nativePlugins": {
+			"MyVpnPlugin": {
+				"android": {
+					"integrateType": "aar",
+					"plugins": [{
+						"type": "module",
+						"name": "MyVpnPlugin",
+						"class": "com.mycompany.vpn.MyVpnPlugin"
+					}]
+				}
+			}
 		}
 	}
 }

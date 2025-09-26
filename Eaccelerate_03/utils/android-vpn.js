@@ -4,6 +4,7 @@ class AndroidVpnManager {
         this.isConnected = false
         this.statusCallback = null
         this.vpnPlugin = null
+        this.hasPermission = false
     }
 
     // 初始化VPN功能
@@ -27,7 +28,16 @@ class AndroidVpnManager {
                     // 使用HBuilderX提供的原生插件调用方式
                     this.vpnPlugin = uni.requireNativePlugin('MyVpnPlugin')
                     console.log('VPN插件加载成功')
-                    resolve(true)
+                    
+                    // 检查当前VPN状态
+                    this.getStatus().then(status => {
+                        this.isConnected = status.isConnected
+                        resolve(true)
+                    }).catch(error => {
+                        console.error('检查VPN状态失败:', error)
+                        resolve(true) // 仍然继续初始化
+                    })
+                    
                 } catch (error) {
                     console.error('加载VPN插件失败:', error)
                     // 模拟模式，用于开发测试
@@ -55,12 +65,16 @@ class AndroidVpnManager {
             // #ifdef APP-PLUS
             if (this.vpnPlugin) {
                 // 真实插件调用
-                this.vpnPlugin.startVpn({
+                const options = {
                     server: node.host,
                     port: parseInt(node.port) || 1080,
-                    username: node.account || 'anonymous',
-                    password: node.password || 'password'
-                }, (result) => {
+                    username: node.account || '',
+                    password: node.password || ''
+                }
+                
+                console.log('调用原生插件连接VPN:', options)
+                
+                this.vpnPlugin.startVpn(options, (result) => {
                     console.log('VPN连接结果:', result)
                     if (result.success) {
                         this.isConnected = true
@@ -145,6 +159,7 @@ class AndroidVpnManager {
         if (this.vpnPlugin) {
             this.vpnPlugin.onVpnStatusUpdate({}, (result) => {
                 console.log('VPN状态更新:', result)
+                this.isConnected = result.connected
                 if (this.statusCallback) {
                     this.statusCallback(result)
                 }
@@ -159,12 +174,14 @@ class AndroidVpnManager {
             // #ifdef APP-PLUS
             if (this.vpnPlugin) {
                 this.vpnPlugin.getVpnStatus({}, (result) => {
+                    this.isConnected = result.isConnected
                     resolve(result)
                 })
             } else {
                 resolve({ 
                     isConnected: this.isConnected, 
-                    status: this.isConnected ? 'connected' : 'disconnected' 
+                    status: this.isConnected ? 'connected' : 'disconnected',
+                    message: this.isConnected ? 'VPN已连接' : 'VPN未连接'
                 })
             }
             // #endif
@@ -172,7 +189,8 @@ class AndroidVpnManager {
             // #ifndef APP-PLUS
             resolve({ 
                 isConnected: this.isConnected, 
-                status: this.isConnected ? 'connected' : 'disconnected' 
+                status: this.isConnected ? 'connected' : 'disconnected',
+                message: this.isConnected ? 'VPN已连接' : 'VPN未连接'
             })
             // #endif
         })

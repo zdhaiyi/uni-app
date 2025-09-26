@@ -5,13 +5,11 @@
     "versionName" : "1.0.0",
     "versionCode" : "100",
     "transformPx" : false,
-    /* 5+App特有相关 */
     "app-plus" : {
         "uniStatistics" : {
-            // 在App平台下也显式关闭统计:cite[3]:cite[8]
             "enable" : false
         },
-        "screenOrientation" : [ "portrait-primary" ], // 明确指定支持竖屏:cite[1]:cite[5]
+        "screenOrientation" : [ "portrait-primary" ],
         "usingComponents" : true,
         "nvueStyleCompiler" : "uni-app",
         "compilerVersion" : 3,
@@ -21,18 +19,13 @@
             "autoclose" : true,
             "delay" : 0
         },
-        /* 模块配置 */
-        "modules" : {},
-        /* 应用发布信息 */
         "distribute" : {
-            /* android打包配置 */
             "android" : {
                 "minSdkVersion" : 21,
                 "targetSdkVersion" : 33,
-                "abiFilters" : [ "armeabi-v7a", "arm64-v8a", "x86", "x86_64" ],
+                "abiFilters" : [ "armeabi-v7a", "arm64-v8a" ],
                 "permissions" : [
                     "<uses-permission android:name=\"android.permission.CHANGE_NETWORK_STATE\"/>",
-                    // "<uses-permission android:name=\"android.permission.MOUNT_UNMOUNT_FILESYSTEMS\"/>",
                     "<uses-permission android:name=\"android.permission.INTERNET\"/>",
                     "<uses-permission android:name=\"android.permission.ACCESS_WIFI_STATE\"/>",
                     "<uses-permission android:name=\"android.permission.ACCESS_NETWORK_STATE\"/>",
@@ -41,11 +34,9 @@
                     "<uses-permission android:name=\"android.permission.BIND_VPN_SERVICE\"/>"
                 ]
             },
-            /* ios打包配置 */
             "ios" : {
                 "dSYMs" : false
             },
-            /* SDK配置 */
             "sdkConfigs" : {},
             "icons" : {
                 "android" : {
@@ -82,24 +73,28 @@
         },
         "nativePlugins" : {
             "MyVpnPlugin" : {
-                "__plugin_info__" : {
-                    "name" : "MyVpnPlugin",
-                    "description" : "自定义VPN插件",
-                    "platforms" : "Android",
-                    "url" : "",
-                    "android_package_name" : "",
-                    "ios_bundle_id" : "",
-                    "isCloud" : false,
-                    "bought" : -1,
-                    "pid" : "",
-                    "parameters" : {}
-                }
+                "hooksClass" : "",
+                "plugins" : [
+                    {
+                        "type" : "module",
+                        "name" : "MyVpnPlugin",
+                        "class" : "com.mycompany.vpn.MyVpnPlugin"
+                    }
+                ],
+                "integrateType" : "aar",
+                "minSdkVersion" : 21,
+                "useAndroidX" : true,
+                "permissions" : [
+                    "<uses-permission android:name=\"android.permission.INTERNET\"/>",
+                    "<uses-permission android:name=\"android.permission.ACCESS_NETWORK_STATE\"/>",
+                    "<uses-permission android:name=\"android.permission.ACCESS_WIFI_STATE\"/>",
+                    "<uses-permission android:name=\"android.permission.BIND_VPN_SERVICE\"/>",
+                    "<uses-permission android:name=\"android.permission.FOREGROUND_SERVICE\"/>"
+                ]
             }
         }
     },
-    /* 快应用特有相关 */
     "quickapp" : {},
-    /* 小程序特有相关 */
     "mp-weixin" : {
         "appid" : "",
         "setting" : {
