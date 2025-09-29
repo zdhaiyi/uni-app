@@ -4,6 +4,7 @@
         {
             "customPlaygroundType" : "local",
             "localRepoPath" : "D:/uniapp_node/Eaccelerate",
+            "packageName" : "com.mycompany.vpn",
             "playground" : "custom",
             "type" : "uni-app:app-android"
         }

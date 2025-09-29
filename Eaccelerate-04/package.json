@@ -1,0 +1,13 @@
+{
+  "name": "Eaccelerate",
+  "version": "1.0.0",
+  "dependencies": {
+    "axios": "^1.12.2",
+    "uni-simple-router": "^2.0.0",
+    "vue": "^3.0.0"
+  },
+  "devDependencies": {
+    "MyVpnPlugin": "file:./nativeplugins/MyVpnPlugin",
+    "rimraf": "^6.0.1"
+  }
+}

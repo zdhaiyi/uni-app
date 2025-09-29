@@ -1,0 +1,16 @@
+{
+  "nativePlugins": [
+    {
+      "android": {
+        "integrateType": "aar",
+        "plugins": [
+          {
+            "type": "module",
+            "name": "MyVpnPlugin",
+            "class": "com.mycompany.vpn.MyVpnPlugin"
+          }
+        ]
+      }
+    }
+  ]
+}

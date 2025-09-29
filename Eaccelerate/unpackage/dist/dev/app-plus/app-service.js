@@ -34,8 +34,6 @@ if (uni.restoreGlobal) {
   const ON_SHOW = "onShow";
   const ON_HIDE = "onHide";
   const ON_LAUNCH = "onLaunch";
-  const ON_REACH_BOTTOM = "onReachBottom";
-  const ON_PULL_DOWN_REFRESH = "onPullDownRefresh";
   function requireNativePlugin(name) {
     return weex.requireModule(name);
   }
@@ -45,6 +43,9 @@ if (uni.restoreGlobal) {
     } else {
       console[type].apply(console, [...args, filename]);
     }
+  }
+  function resolveEasycom(component, easycom) {
+    return typeof component === "string" ? easycom : component;
   }
   const createLifeCycleHook = (lifecycle, flag = 0) => (hook, target = vue.getCurrentInstance()) => {
     !vue.isInSSRComponentSetup && vue.injectHook(lifecycle, hook, target);
@@ -63,16 +64,6 @@ if (uni.restoreGlobal) {
     ON_LAUNCH,
     1
     /* HookFlags.APP */
-  );
-  const onReachBottom = /* @__PURE__ */ createLifeCycleHook(
-    ON_REACH_BOTTOM,
-    2
-    /* HookFlags.PAGE */
-  );
-  const onPullDownRefresh = /* @__PURE__ */ createLifeCycleHook(
-    ON_PULL_DOWN_REFRESH,
-    2
-    /* HookFlags.PAGE */
   );
   const _export_sfc = (sfc, props) => {
     const target = sfc.__vccOpts || sfc;
@@ -118,440 +109,203 @@ if (uni.restoreGlobal) {
       /* CLASS, STYLE */
     );
   }
-  const UniIcons = /* @__PURE__ */ _export_sfc(_sfc_main$3, [["render", _sfc_render$2], ["__scopeId", "data-v-f218fb61"], ["__file", "F:/uni-app_node/uni-app/Eaccelerate/components/uni-icons/uni-icons.vue"]]);
+  const __easycom_0 = /* @__PURE__ */ _export_sfc(_sfc_main$3, [["render", _sfc_render$2], ["__scopeId", "data-v-f218fb61"], ["__file", "D:/uniapp_node/Eaccelerate/components/uni-icons/uni-icons.vue"]]);
   class AndroidVpnManager {
     constructor() {
-      this.isConnected = false;
+      this.vpn = null;
+      this.available = false;
+      this.inited = false;
       this.isConnecting = false;
-      this.statusCallback = null;
-      this.vpnPlugin = null;
-      this.isInitialized = false;
-      this.connectionState = "disconnected";
-      this.lastStatus = null;
-      this.retryCount = 0;
-      this.maxRetries = 3;
+      this.isConnected = false;
+      this.statusCb = null;
+      this.timer = null;
+      this.connectStartAt = 0;
     }
-    // 添加插件状态检查方法
-    checkPluginAvailability() {
-      return new Promise((resolve) => {
+    // 触发状态回调
+    _emit(status) {
+      if (typeof this.statusCb === "function") {
         try {
-          if (typeof requireNativePlugin !== "function") {
-            resolve(false);
-            return;
-          }
-          const plugin = requireNativePlugin("MyVpnPlugin");
-          resolve(!!plugin);
-        } catch (error) {
-          formatAppLog("error", "at utils/android-vpn.js:33", "检查插件可用性失败:", error);
-          resolve(false);
+          this.statusCb(status || {});
+        } catch (e) {
+          formatAppLog("error", "at utils/android-vpn.js:20", e);
         }
-      });
-    }
-    async diagnosePlugin() {
-      formatAppLog("log", "at utils/android-vpn.js:40", "=== VPN插件诊断 ===");
-      const systemInfo = uni.getSystemInfoSync();
-      formatAppLog("log", "at utils/android-vpn.js:44", "运行平台:", systemInfo.platform);
-      formatAppLog("log", "at utils/android-vpn.js:45", "应用版本:", systemInfo.appVersion);
-      formatAppLog("log", "at utils/android-vpn.js:48", "requireNativePlugin 类型:", typeof requireNativePlugin);
-      try {
-        const plugin = requireNativePlugin("MyVpnPlugin");
-        formatAppLog("log", "at utils/android-vpn.js:53", "插件加载结果:", plugin ? "成功" : "失败");
-        formatAppLog("log", "at utils/android-vpn.js:54", "插件对象类型:", typeof plugin);
-        if (plugin) {
-          const methods = ["startVpn", "stopVpn", "getVpnStatus", "onVpnStatusUpdate"];
-          methods.forEach((method) => {
-            formatAppLog("log", "at utils/android-vpn.js:60", `${method} 方法:`, typeof plugin[method] === "function" ? "存在" : "缺失");
-          });
-        }
-      } catch (error) {
-        formatAppLog("log", "at utils/android-vpn.js:64", "插件加载异常:", error.message);
-      }
-      formatAppLog("log", "at utils/android-vpn.js:67", "=== 诊断结束 ===");
-    }
-    // 添加插件验证方法
-    async verifyPlugin() {
-      formatAppLog("log", "at utils/android-vpn.js:72", "=== 验证插件可用性 ===");
-      try {
-        const systemInfo = uni.getSystemInfoSync();
-        formatAppLog("log", "at utils/android-vpn.js:77", "运行平台:", systemInfo.platform);
-        if (systemInfo.platform !== "android") {
-          formatAppLog("log", "at utils/android-vpn.js:80", "非Android平台，跳过插件验证");
-          return false;
-        }
-        if (typeof requireNativePlugin !== "function") {
-          formatAppLog("error", "at utils/android-vpn.js:86", "requireNativePlugin 不可用");
-          return false;
-        }
-        formatAppLog("log", "at utils/android-vpn.js:91", "尝试加载插件...");
-        const plugin = requireNativePlugin("MyVpnPlugin");
-        formatAppLog("log", "at utils/android-vpn.js:93", "插件加载结果:", plugin);
-        if (!plugin) {
-          formatAppLog("error", "at utils/android-vpn.js:96", "插件加载返回 null");
-          return false;
-        }
-        const methods = ["startVpn", "stopVpn", "getVpnStatus", "onVpnStatusUpdate"];
-        let allMethodsExist = true;
-        methods.forEach((method) => {
-          const exists = typeof plugin[method] === "function";
-          formatAppLog("log", "at utils/android-vpn.js:106", `方法 ${method}: ${exists ? "存在" : "缺失"}`);
-          if (!exists)
-            allMethodsExist = false;
-        });
-        formatAppLog("log", "at utils/android-vpn.js:110", "插件验证结果:", allMethodsExist ? "通过" : "失败");
-        return allMethodsExist;
-      } catch (error) {
-        formatAppLog("error", "at utils/android-vpn.js:114", "插件验证异常:", error);
-        return false;
       }
     }
-    // 初始化VPN功能
+    // 初始化：装载原生插件（仅 Android APP-PLUS 环境）
     async initialize() {
-      if (this.isInitialized) {
-        formatAppLog("log", "at utils/android-vpn.js:123", "VPN功能已初始化");
-        return this.pluginAvailable;
-      }
-      await this.diagnosePlugin();
-      formatAppLog("log", "at utils/android-vpn.js:128", "开始初始化VPN功能");
-      this.pluginAvailable = await this.verifyPlugin();
-      formatAppLog("log", "at utils/android-vpn.js:131", "插件可用状态:", this.pluginAvailable);
+      if (this.inited)
+        return this.available;
       try {
-        const systemInfo = uni.getSystemInfoSync();
-        formatAppLog("log", "at utils/android-vpn.js:136", "系统平台:", systemInfo.platform);
-        if (systemInfo.platform !== "android") {
-          formatAppLog("warn", "at utils/android-vpn.js:139", "VPN功能仅支持Android平台");
-          this.isInitialized = true;
-          this.pluginAvailable = false;
+        const sys = uni.getSystemInfoSync();
+        if (sys.platform !== "android") {
+          formatAppLog("warn", "at utils/android-vpn.js:32", "[VPN] 非 Android 平台，跳过原生插件");
+          this.available = false;
+          this.inited = true;
           return false;
         }
         if (typeof requireNativePlugin !== "function") {
-          formatAppLog("error", "at utils/android-vpn.js:147", "requireNativePlugin 方法不可用");
-          this.isInitialized = true;
-          this.pluginAvailable = false;
+          formatAppLog("warn", "at utils/android-vpn.js:36", "[VPN] requireNativePlugin 不可用");
+          this.available = false;
+          this.inited = true;
           return false;
         }
-        try {
-          this.vpnPlugin = requireNativePlugin("MyVpnPlugin");
-          if (!this.vpnPlugin) {
-            throw new Error("插件加载返回null");
-          }
-          if (typeof this.vpnPlugin.startVpn !== "function" || typeof this.vpnPlugin.stopVpn !== "function") {
-            formatAppLog("error", "at utils/android-vpn.js:163", "VPN插件方法不完整");
-            this.pluginAvailable = false;
-          } else {
-            this.pluginAvailable = true;
-            formatAppLog("log", "at utils/android-vpn.js:167", "VPN插件加载成功，方法检查通过");
-          }
-        } catch (pluginError) {
-          formatAppLog("error", "at utils/android-vpn.js:170", "加载VPN插件失败:", pluginError);
-          this.pluginAvailable = false;
-        }
-        if (this.pluginAvailable) {
-          await this.setupStatusListener();
-        }
-        this.isInitialized = true;
-        formatAppLog("log", "at utils/android-vpn.js:180", "VPN功能初始化完成，插件可用状态:", this.pluginAvailable);
-        return this.pluginAvailable;
-      } catch (error) {
-        formatAppLog("error", "at utils/android-vpn.js:192", "VPN初始化异常:", error);
-        this.isInitialized = true;
-        this.pluginAvailable = false;
-        return false;
-      }
-    }
-    // 设置状态监听
-    async setupStatusListener() {
-      if (!this.vpnPlugin || typeof this.vpnPlugin.onVpnStatusUpdate !== "function") {
-        formatAppLog("warn", "at utils/android-vpn.js:202", "VPN插件不支持状态监听，使用模拟模式");
-        return;
-      }
-      return new Promise((resolve) => {
-        try {
-          this.vpnPlugin.onVpnStatusUpdate({}, (result) => {
-            formatAppLog("log", "at utils/android-vpn.js:209", "收到原生VPN状态更新:", JSON.stringify(result));
-            this.handleNativeStatusUpdate(result);
-          });
-          formatAppLog("log", "at utils/android-vpn.js:212", "VPN状态监听注册成功");
-          resolve(true);
-        } catch (error) {
-          formatAppLog("error", "at utils/android-vpn.js:215", "注册状态监听失败:", error);
-          resolve(false);
-        }
-      });
-    }
-    // 处理原生状态更新
-    handleNativeStatusUpdate(result) {
-      if (!result || typeof result !== "object") {
-        formatAppLog("warn", "at utils/android-vpn.js:224", "无效的状态更新数据");
-        return;
-      }
-      const connected = !!result.connected || !!result.isConnected;
-      const message = result.message || "状态更新";
-      const status = result.status || (connected ? "connected" : "disconnected");
-      this.lastStatus = result;
-      this.isConnected = connected;
-      this.isConnecting = false;
-      this.connectionState = status;
-      formatAppLog("log", "at utils/android-vpn.js:237", "处理VPN状态更新:", {
-        connected,
-        status,
-        message
-      });
-      if (connected) {
-        this.retryCount = 0;
-      }
-      if (this.statusCallback) {
-        const statusInfo = {
-          connected,
-          isConnected: connected,
-          status,
-          message,
-          timestamp: result.timestamp || Date.now(),
-          success: result.success !== false
-        };
-        this.statusCallback(statusInfo);
-      }
-    }
-    // 启动VPN连接
-    async connect(node) {
-      try {
-        if (!this.isInitialized) {
-          await this.initialize();
-        }
-        if (!this.pluginAvailable) {
-          let errorMsg = "VPN插件不可用 - ";
-          if (!this.vpnPlugin) {
-            errorMsg += "插件对象为null";
-          } else if (typeof this.vpnPlugin.startVpn !== "function") {
-            errorMsg += "startVpn方法不存在";
-          } else {
-            errorMsg += "未知原因";
-          }
-          formatAppLog("warn", "at utils/android-vpn.js:281", errorMsg + "，使用模拟模式");
-          return this.mockConnect(node);
-        }
-        if (this.isConnecting) {
-          throw new Error("VPN连接正在进行中");
-        }
-        if (this.isConnected) {
-          throw new Error("VPN已连接，请先断开");
-        }
-        if (!node || !node.host || !node.port) {
-          throw new Error("节点信息不完整");
-        }
-        formatAppLog("log", "at utils/android-vpn.js:299", "开始连接VPN，服务器:", node.host + ":" + node.port);
-        this.isConnecting = true;
-        this.connectionState = "connecting";
-        return new Promise((resolve, reject) => {
-          const connectionParams = {
-            server: node.host,
-            port: parseInt(node.port) || 1080,
-            username: node.account || "default",
-            password: node.password || "default"
-          };
-          formatAppLog("log", "at utils/android-vpn.js:312", "调用原生连接方法:", connectionParams);
-          const timeoutId = setTimeout(() => {
-            reject(new Error("VPN连接超时（30秒）"));
-          }, 3e4);
-          this.vpnPlugin.startVpn(connectionParams, (result) => {
-            clearTimeout(timeoutId);
-            formatAppLog("log", "at utils/android-vpn.js:321", "原生连接回调:", JSON.stringify(result));
-            this.isConnecting = false;
-            if (result && result.success) {
-              this.isConnected = true;
-              this.connectionState = "connected";
-              resolve(result);
-            } else {
-              const errorMsg = result ? result.message : "连接失败，无返回结果";
-              this.isConnected = false;
-              this.connectionState = "disconnected";
-              reject(new Error(errorMsg));
-            }
-          });
-        });
-      } catch (error) {
-        this.isConnecting = false;
-        this.isConnected = false;
-        this.connectionState = "error";
-        formatAppLog("error", "at utils/android-vpn.js:342", "VPN连接错误:", error);
-        throw error;
-      }
-    }
-    // 处理连接错误
-    handleConnectionError(errorMsg, reject) {
-      this.isConnecting = false;
-      this.isConnected = false;
-      this.connectionState = "error";
-      formatAppLog("error", "at utils/android-vpn.js:353", "VPN连接错误:", errorMsg);
-      this.triggerStatusUpdate(false, errorMsg, "error");
-      if (reject) {
-        reject(new Error(errorMsg));
-      }
-    }
-    // 断开VPN连接
-    async disconnect() {
-      formatAppLog("log", "at utils/android-vpn.js:365", "开始断开VPN连接");
-      try {
-        if (!this.isConnected && !this.isConnecting) {
-          formatAppLog("log", "at utils/android-vpn.js:369", "VPN未连接，无需断开");
-          return {
-            success: true,
-            message: "VPN未连接",
-            wasConnected: false
-          };
-        }
-        this.triggerStatusUpdate(false, "正在断开连接...", "disconnecting");
-        if (!this.vpnPlugin) {
-          throw new Error("VPN插件未初始化");
-        }
-        return new Promise((resolve, reject) => {
-          this.vpnPlugin.stopVpn({}, (result) => {
-            formatAppLog("log", "at utils/android-vpn.js:387", "原生断开回调:", JSON.stringify(result));
-            this.isConnecting = false;
-            if (result && result.success) {
-              formatAppLog("log", "at utils/android-vpn.js:392", "VPN断开指令发送成功");
-              resolve({
-                success: true,
-                message: "VPN断开指令已发送",
-                wasConnected: true
+        this.vpn = requireNativePlugin("MyVpnPlugin");
+        this.available = !!this.vpn;
+        if (this.available) {
+          if (typeof this.vpn.onVpnStatusUpdate === "function") {
+            this.vpn.onVpnStatusUpdate((s) => {
+              const connected = !!(s && (s.connected || s.isConnected));
+              const msg = s && (s.message || s.msg) || (connected ? "已连接" : "未连接");
+              this.isConnected = connected;
+              this.isConnecting = false;
+              this._emit({
+                connected,
+                status: connected ? "connected" : "disconnected",
+                message: msg
               });
-            } else {
-              const errorMsg = result ? result.message : "断开失败";
-              this.handleDisconnectionError(errorMsg, reject);
-            }
-          });
-        });
-      } catch (error) {
-        this.handleDisconnectionError(error.message, () => {
-          throw error;
-        });
-      }
-    }
-    // 处理断开错误
-    handleDisconnectionError(errorMsg, reject) {
-      formatAppLog("error", "at utils/android-vpn.js:420", "VPN断开错误:", errorMsg);
-      this.isConnected = false;
-      this.isConnecting = false;
-      this.connectionState = "disconnected";
-      this.triggerStatusUpdate(false, errorMsg, "error");
-      if (reject) {
-        reject(new Error(errorMsg));
-      }
-    }
-    // 监听状态变化
-    onStatusUpdate(callback) {
-      formatAppLog("log", "at utils/android-vpn.js:436", "注册状态更新回调");
-      this.statusCallback = callback;
-      if (this.statusCallback) {
-        this.triggerStatusUpdate(
-          this.isConnected,
-          this.isConnected ? "已连接" : "未连接",
-          this.connectionState
-        );
-      }
-    }
-    // 触发状态更新
-    triggerStatusUpdate(connected, message, status = null) {
-      const statusInfo = {
-        connected,
-        isConnected: connected,
-        status: status || (connected ? "connected" : "disconnected"),
-        message,
-        timestamp: Date.now()
-      };
-      formatAppLog("log", "at utils/android-vpn.js:457", "触发状态更新:", statusInfo);
-      if (this.statusCallback) {
-        this.statusCallback(statusInfo);
-      }
-    }
-    // 移除状态监听
-    offStatusUpdate() {
-      formatAppLog("log", "at utils/android-vpn.js:466", "移除状态监听");
-      this.statusCallback = null;
-    }
-    // 获取当前状态
-    async getStatus() {
-      try {
-        if (!this.isInitialized) {
-          await this.initialize();
+            });
+          }
+        } else {
+          formatAppLog("warn", "at utils/android-vpn.js:61", "[VPN] 未加载到原生插件，将使用模拟模式");
         }
-        if (this.vpnPlugin && typeof this.vpnPlugin.getVpnStatus === "function") {
-          return new Promise((resolve) => {
-            this.vpnPlugin.getVpnStatus({}, (result) => {
-              formatAppLog("log", "at utils/android-vpn.js:481", "获取VPN状态结果:", JSON.stringify(result));
-              if (result) {
-                this.handleNativeStatusUpdate(result);
-              }
-              resolve(result || {
-                isConnected: this.isConnected,
-                connected: this.isConnected,
-                status: this.connectionState,
-                message: "状态查询完成",
-                success: true
+      } catch (e) {
+        formatAppLog("error", "at utils/android-vpn.js:64", "[VPN] 初始化失败：", e);
+        this.available = false;
+      }
+      this.inited = true;
+      return this.available;
+    }
+    onStatusUpdate(cb) {
+      this.statusCb = cb;
+    }
+    offStatusUpdate() {
+      this.statusCb = null;
+    }
+    async getStatus() {
+      if (!this.inited)
+        await this.initialize();
+      if (this.available && typeof this.vpn.getVpnStatus === "function") {
+        try {
+          return await new Promise((resolve) => {
+            this.vpn.getVpnStatus((s) => {
+              const connected = !!(s && (s.connected || s.isConnected));
+              resolve({
+                connected,
+                status: connected ? "connected" : "disconnected",
+                message: s && (s.message || s.msg) || (connected ? "已连接" : "未连接")
               });
             });
           });
+        } catch (e) {
         }
-        return {
-          isConnected: this.isConnected,
-          connected: this.isConnected,
-          status: this.connectionState,
-          message: "当前状态",
-          success: true
-        };
-      } catch (error) {
-        formatAppLog("error", "at utils/android-vpn.js:505", "获取状态错误:", error);
-        return {
-          isConnected: false,
-          connected: false,
-          status: "error",
-          message: error.message,
-          success: false
-        };
       }
-    }
-    // 获取连接状态摘要
-    getConnectionSummary() {
       return {
-        isConnected: this.isConnected,
-        isConnecting: this.isConnecting,
-        connectionState: this.connectionState,
-        lastStatus: this.lastStatus
+        connected: this.isConnected,
+        status: this.isConnected ? "connected" : this.isConnecting ? "connecting" : "disconnected",
+        message: this.isConnected ? "已连接" : "未连接"
       };
     }
-    // 模拟连接（测试用）
-    async mockConnect(node) {
-      formatAppLog("log", "at utils/android-vpn.js:528", "模拟VPN连接:", node.host);
-      return new Promise((resolve) => {
+    // 连接
+    async connect(node) {
+      if (!this.inited)
+        await this.initialize();
+      if (!node || !node.host || !node.port) {
+        throw new Error("节点信息不完整");
+      }
+      if (this.isConnecting)
+        throw new Error("连接中，请稍候");
+      if (this.isConnected)
+        throw new Error("已连接，请先断开");
+      const params = {
+        proxyType: "socks5",
+        server: node.host,
+        port: parseInt(node.port, 10) || 1080,
+        username: node.account || "",
+        password: node.password || "",
+        authType: node.account && node.password ? "password" : "none"
+      };
+      this.isConnecting = true;
+      this._emit({ connected: false, status: "connecting", message: "连接中..." });
+      if (this.available && typeof this.vpn.startVpn === "function") {
+        return await new Promise((resolve, reject) => {
+          const to = setTimeout(() => {
+            this.isConnecting = false;
+            reject(new Error("连接超时"));
+            this._emit({ connected: false, status: "error", message: "连接超时" });
+          }, 3e4);
+          try {
+            this.vpn.startVpn(params, (ret) => {
+              clearTimeout(to);
+              this.isConnecting = false;
+              const ok = !!(ret && ret.success);
+              this.isConnected = ok;
+              this.connectStartAt = ok ? Date.now() : 0;
+              this._emit({
+                connected: ok,
+                status: ok ? "connected" : "error",
+                message: ret && ret.message || (ok ? "连接成功" : "连接失败")
+              });
+              return ok ? resolve(ret) : reject(new Error(ret && ret.message || "连接失败"));
+            });
+          } catch (e) {
+            clearTimeout(to);
+            this.isConnecting = false;
+            this.isConnected = false;
+            this._emit({ connected: false, status: "error", message: e.message || "连接异常" });
+            reject(e);
+          }
+        });
+      }
+      return await this._mockConnect();
+    }
+    // 断开
+    async disconnect() {
+      if (this.available && typeof this.vpn.stopVpn === "function") {
+        return await new Promise((resolve) => {
+          try {
+            this.vpn.stopVpn((ret) => {
+              this.isConnected = false;
+              this.isConnecting = false;
+              this.connectStartAt = 0;
+              this._emit({ connected: false, status: "disconnected", message: ret && ret.message || "已断开" });
+              resolve(ret || { success: true });
+            });
+          } catch (e) {
+            this.isConnected = false;
+            this.isConnecting = false;
+            this.connectStartAt = 0;
+            this._emit({ connected: false, status: "disconnected", message: "已断开" });
+            resolve({ success: true });
+          }
+        });
+      }
+      clearInterval(this.timer);
+      this.timer = null;
+      this.isConnected = false;
+      this.isConnecting = false;
+      this.connectStartAt = 0;
+      this._emit({ connected: false, status: "disconnected", message: "已断开（模拟）" });
+      return { success: true };
+    }
+    // ——— 模拟模式（仅调界面用） ———
+    async _mockConnect() {
+      return await new Promise((resolve) => {
         setTimeout(() => {
           this.isConnecting = false;
           this.isConnected = true;
-          this.connectionState = "connected";
-          this.triggerStatusUpdate(true, "模拟连接成功", "connected");
-          resolve({
-            success: true,
-            message: "模拟连接成功"
-          });
-        }, 2e3);
-      });
-    }
-    // 模拟断开（测试用）
-    async mockDisconnect() {
-      formatAppLog("log", "at utils/android-vpn.js:547", "模拟VPN断开");
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          this.isConnected = false;
-          this.connectionState = "disconnected";
-          this.triggerStatusUpdate(false, "模拟断开成功", "disconnected");
-          resolve({
-            success: true,
-            message: "模拟断开成功",
-            wasConnected: true
-          });
+          this.connectStartAt = Date.now();
+          this._emit({ connected: true, status: "connected", message: "模拟连接成功" });
+          clearInterval(this.timer);
+          this.timer = setInterval(() => {
+            if (this.isConnected)
+              this._emit({ connected: true, status: "connected", message: "模拟运行中" });
+          }, 3e3);
+          resolve({ success: true, message: "模拟连接成功" });
         }, 1e3);
       });
     }
   }
-  const androidVpnManager = new AndroidVpnManager();
+  const mgr = new AndroidVpnManager();
   const _sfc_main$2 = {
     __name: "index",
     setup(__props, { expose: __expose }) {
@@ -565,54 +319,16 @@ if (uni.restoreGlobal) {
       const connectionInfo = vue.ref("--");
       const connectionTime = vue.ref("--");
       const connectButtonText = vue.ref("连接VPN");
-      const selectedNode = vue.ref(null);
-      const selectedApps = vue.ref([0]);
       const nodes = vue.ref([]);
-      const connectionSeconds = vue.ref(0);
-      const connectingInterval = vue.ref(null);
+      const selectedIndex = vue.ref(null);
       const page = vue.ref(1);
       const pageSize = vue.ref(20);
-      const isBottom = vue.ref(false);
       const isLoading = vue.ref(false);
-      const apps = vue.ref([
-        {
-          name: "浏览器",
-          icon: "compass"
-        },
-        {
-          name: "WhatsApp",
-          icon: "chat"
-        },
-        {
-          name: "Telegram",
-          icon: "chatboxes"
-        },
-        {
-          name: "Twitter",
-          icon: "personadd"
-        },
-        {
-          name: "Instagram",
-          icon: "camera"
-        },
-        {
-          name: "Facebook",
-          icon: "person"
-        },
-        {
-          name: "游戏",
-          icon: "game"
-        },
-        {
-          name: "全部应用",
-          icon: "more"
-        }
-      ]);
-      const log = (message, data = null) => {
-        {
-          formatAppLog("log", "at pages/index/index.vue:181", `[VPN] ${message}`, data || "");
-        }
-      };
+      const isBottom = vue.ref(false);
+      let timer = null;
+      const availableNodes = vue.computed(
+        () => nodes.value.filter((n) => n.status && !isExpired(n))
+      );
       const statusClass = vue.computed(() => {
         if (isConnected.value)
           return "connected";
@@ -620,479 +336,215 @@ if (uni.restoreGlobal) {
           return "connecting";
         return "disconnected";
       });
-      const availableNodes = vue.computed(() => {
-        return nodes.value.filter((node) => {
-          const isOnline = node.status === true;
-          const isNotExpired = new Date(node.expire) > /* @__PURE__ */ new Date();
-          return isOnline && isNotExpired;
-        });
-      });
-      vue.onMounted(() => {
-        checkLoginStatus();
-        setupVpn();
-      });
-      onShow(() => {
-        if (isLoggedIn.value) {
-          page.value = 1;
-          isBottom.value = false;
-          fetchNodes(false);
-        }
+      vue.onMounted(async () => {
+        checkLogin();
+        await mgr.initialize();
+        mgr.onStatusUpdate(handleVpnStatus);
+        if (isLoggedIn.value)
+          refreshNodes();
       });
       vue.onUnmounted(() => {
-        if (connectingInterval.value) {
-          clearInterval(connectingInterval.value);
-          connectingInterval.value = null;
-        }
-        androidVpnManager.offStatusUpdate();
-      });
-      const setupVpn = async () => {
-        const isAndroid = uni.getSystemInfoSync().platform === "android";
-        log("初始化VPN功能");
-        if (isAndroid) {
-          try {
-            await androidVpnManager.initialize();
-            androidVpnManager.onStatusUpdate((status) => {
-              handleVpnStatusChange(status);
-            });
-            const currentStatus = await androidVpnManager.getStatus();
-            handleVpnStatusChange(currentStatus);
-          } catch (error) {
-            log("VPN初始化失败", error);
-            handleVpnStatusChange({
-              connected: false,
-              isConnected: false,
-              status: "disconnected",
-              message: "初始化失败"
-            });
-          }
-        } else {
-          log("非Android平台，不支持VPN");
-          handleVpnStatusChange({
-            connected: false,
-            isConnected: false,
-            status: "unsupported",
-            message: "当前平台不支持VPN"
-          });
-        }
-      };
-      onReachBottom(() => {
-        if (!isBottom.value && !isLoading.value) {
-          page.value++;
-          fetchNodes(true);
+        mgr.offStatusUpdate();
+        if (timer) {
+          clearInterval(timer);
+          timer = null;
         }
       });
-      onPullDownRefresh(async () => {
-        page.value = 1;
-        isBottom.value = false;
-        isLoading.value = false;
-        await fetchNodes(false);
-        uni.stopPullDownRefresh();
-      });
-      const checkLoginStatus = () => {
-        const storedToken = uni.getStorageSync("token");
-        const storedUsername = uni.getStorageSync("username");
-        if (storedToken && storedUsername) {
+      function checkLogin() {
+        const t = uni.getStorageSync("token");
+        const u = uni.getStorageSync("username");
+        if (t && u) {
+          token.value = t;
+          username.value = u;
           isLoggedIn.value = true;
-          username.value = storedUsername;
-          token.value = storedToken;
         }
-      };
-      const fetchNodes = async (isLoadMore = false) => {
-        var _a;
+      }
+      async function refreshNodes() {
         if (!isLoggedIn.value) {
-          uni.showToast({
-            title: "请先登录",
-            icon: "none"
-          });
+          uni.showToast({ title: "请先登录", icon: "none" });
           return;
         }
         if (isLoading.value)
           return;
         isLoading.value = true;
-        if (!isLoadMore) {
-          uni.showLoading({
-            title: "获取节点中..."
-          });
-        }
+        uni.showLoading({ title: "获取节点中..." });
         try {
           const res = await uni.request({
             url: "http://124.223.21.69/api/nodes",
             method: "GET",
-            data: {
-              page: page.value,
-              pageSize: pageSize.value
-            },
-            header: {
-              "Authorization": "Bearer " + token.value
-            }
+            data: { page: page.value, pageSize: pageSize.value },
+            header: { "Authorization": "Bearer " + token.value }
           });
-          if (res.statusCode === 200 && res.data) {
-            let newNodes = [];
-            if (Array.isArray(res.data)) {
-              newNodes = res.data;
-            } else if (res.data.nodes && Array.isArray(res.data.nodes)) {
-              newNodes = res.data.nodes;
-            } else if (res.data.data && Array.isArray(res.data.data)) {
-              newNodes = res.data.data;
-            } else {
-              newNodes = [];
-            }
-            const processedNodes = newNodes.map((node) => ({
-              ...node,
-              displayName: node.tag || "未知节点",
-              isAvailable: node.status === true && new Date(node.expire) > /* @__PURE__ */ new Date(),
-              expireText: formatDate(node.expire),
-              hasAuth: !!(node.account && node.password)
-            }));
-            if (isLoadMore) {
-              nodes.value = [...nodes.value, ...processedNodes];
-            } else {
-              nodes.value = processedNodes;
-              const firstAvailableIndex = processedNodes.findIndex((node) => node.isAvailable);
-              if (firstAvailableIndex !== -1) {
-                selectedNode.value = firstAvailableIndex;
-              } else if (processedNodes.length > 0) {
-                selectedNode.value = 0;
-              }
-            }
-            const total = res.data.total || newNodes.length;
-            if (newNodes.length < pageSize.value || nodes.value.length >= total) {
-              isBottom.value = true;
-            }
-            if (!isLoadMore) {
-              uni.hideLoading();
-            }
-          } else {
-            throw new Error(((_a = res.data) == null ? void 0 : _a.message) || "获取节点失败");
-          }
-        } catch (error) {
-          if (!isLoadMore) {
-            uni.hideLoading();
-          }
-          uni.showToast({
-            title: "获取节点失败",
-            icon: "none"
-          });
-          log("获取节点失败:", error);
+          let arr = [];
+          if (Array.isArray(res.data))
+            arr = res.data;
+          else if (res.data && Array.isArray(res.data.nodes))
+            arr = res.data.nodes;
+          else if (res.data && Array.isArray(res.data.data))
+            arr = res.data.data;
+          nodes.value = (arr || []).map((x) => ({ ...x }));
+          const idx = nodes.value.findIndex((n) => n.status && !isExpired(n));
+          selectedIndex.value = idx !== -1 ? idx : nodes.value.length ? 0 : null;
+        } catch (e) {
+          uni.showToast({ title: "获取节点失败", icon: "none" });
+          formatAppLog("error", "at pages/index/index.vue:182", e);
         } finally {
           isLoading.value = false;
+          uni.hideLoading();
         }
-      };
-      const handleAuth = () => {
+      }
+      function isExpired(n) {
+        if (!n.expire)
+          return false;
+        return new Date(n.expire).getTime() <= Date.now();
+      }
+      function hasExpiredDisplay(n) {
+        return false;
+      }
+      function formatExpire(exp) {
+        if (!exp)
+          return "无过期";
+        const d = new Date(exp);
+        const y = d.getFullYear();
+        const m = (d.getMonth() + 1).toString().padStart(2, "0");
+        const day = d.getDate().toString().padStart(2, "0");
+        const delta = d.getTime() - Date.now();
+        if (delta > 0) {
+          const days = Math.ceil(delta / 864e5);
+          if (days <= 30)
+            return `${days}天后过期`;
+        }
+        return `${y}-${m}-${day}`;
+      }
+      function selectNode(i) {
+        const n = nodes.value[i];
+        if (!n)
+          return;
+        if (!n.status || isExpired(n)) {
+          uni.showToast({ title: "该节点不可用", icon: "none" });
+          return;
+        }
+        selectedIndex.value = i;
+        if (isConnected.value) {
+          connectionInfo.value = `${n.tag} · ${n.host}:${n.port}`;
+        }
+      }
+      function handleAuth() {
         if (isLoggedIn.value) {
           uni.showModal({
             title: "确认退出",
             content: "确定要退出登录吗？",
-            success: (res) => {
-              if (res.confirm) {
-                uni.removeStorageSync("token");
-                uni.removeStorageSync("username");
-                isLoggedIn.value = false;
-                token.value = "";
-                nodes.value = [];
-                selectedNode.value = null;
-                if (isConnected.value) {
-                  disconnectVPN();
-                }
-                uni.showToast({
-                  title: "已退出登录",
-                  icon: "success"
-                });
-              }
+            success: async ({ confirm }) => {
+              if (!confirm)
+                return;
+              if (isConnected.value)
+                await disconnectVPN();
+              uni.removeStorageSync("token");
+              uni.removeStorageSync("username");
+              isLoggedIn.value = false;
+              token.value = "";
+              username.value = "";
+              nodes.value = [];
+              selectedIndex.value = null;
+              uni.showToast({ title: "已退出登录", icon: "success" });
             }
           });
         } else {
-          uni.navigateTo({
-            url: "/pages/login/login"
-          });
+          uni.navigateTo({ url: "/pages/login/login" });
         }
-      };
-      const connectVPN = async () => {
-        if (isConnecting.value) {
-          uni.showToast({
-            title: "连接正在进行中，请稍候",
-            icon: "none",
-            duration: 1e3
-          });
+      }
+      async function toggleVPN() {
+        if (isConnecting.value)
           return;
-        }
         if (!isLoggedIn.value) {
-          uni.showToast({
-            title: "请先登录",
-            icon: "none"
-          });
+          uni.showToast({ title: "请先登录", icon: "none" });
           return;
         }
-        if (selectedNode.value === null) {
-          uni.showToast({
-            title: "请先选择节点",
-            icon: "none"
-          });
+        if (selectedIndex.value === null) {
+          uni.showToast({ title: "请选择节点", icon: "none" });
           return;
         }
-        const selectedNodeData = nodes.value[selectedNode.value];
-        if (!selectedNodeData.isAvailable) {
-          uni.showToast({
-            title: "当前节点不可用",
-            icon: "none"
-          });
+        if (isConnected.value)
+          await disconnectVPN();
+        else
+          await connectVPN();
+      }
+      async function connectVPN() {
+        const node = nodes.value[selectedIndex.value];
+        if (!node)
+          return;
+        if (!node.status || isExpired(node)) {
+          uni.showToast({ title: "该节点不可用", icon: "none" });
           return;
         }
-        if (!selectedNodeData.hasAuth) {
-          uni.showToast({
-            title: "当前节点缺少认证信息",
-            icon: "none"
-          });
-          return;
-        }
-        log("开始VPN连接流程", {
-          node: selectedNodeData.tag
-        });
         isConnecting.value = true;
         statusText.value = "连接中...";
-        connectButtonText.value = "连接中";
+        connectButtonText.value = "连接中...";
         try {
-          await androidVpnManager.connect(selectedNodeData);
-          log("VPN连接指令完成");
-        } catch (error) {
-          log("VPN连接错误", error);
+          await mgr.connect(node);
+        } catch (e) {
+          isConnecting.value = false;
+          isConnected.value = false;
+          statusText.value = "连接失败";
+          connectButtonText.value = "连接VPN";
+          uni.showToast({ title: e.message || "连接失败", icon: "none" });
         }
-      };
-      const disconnectVPN = async () => {
+      }
+      async function disconnectVPN() {
         try {
-          log("开始断开VPN连接");
-          await androidVpnManager.disconnect();
-          log("VPN断开指令完成");
-        } catch (error) {
-          log("断开VPN失败", error);
-          uni.showToast({
-            title: error.message || "断开VPN失败",
-            icon: "none"
-          });
+          await mgr.disconnect();
+        } catch (e) {
+          uni.showToast({ title: e.message || "断开失败", icon: "none" });
         }
-      };
-      const toggleVPN = async () => {
-        if (isConnecting.value) {
-          return;
-        }
-        if (!isLoggedIn.value) {
-          uni.showToast({
-            title: "请先登录",
-            icon: "none"
-          });
-          return;
-        }
-        if (nodes.value.length === 0) {
-          uni.showToast({
-            title: "暂无可用节点",
-            icon: "none"
-          });
-          return;
-        }
-        if (selectedNode.value === null) {
-          uni.showToast({
-            title: "请先选择节点",
-            icon: "none"
-          });
-          return;
-        }
-        const selectedNodeData = nodes.value[selectedNode.value];
-        if (!selectedNodeData.isAvailable) {
-          uni.showToast({
-            title: "当前节点不可用",
-            icon: "none"
-          });
-          return;
-        }
-        if (!selectedNodeData.hasAuth) {
-          uni.showToast({
-            title: "当前节点缺少认证信息",
-            icon: "none"
-          });
-          return;
-        }
-        log("切换VPN状态", {
-          isConnected: isConnected.value,
-          isConnecting: isConnecting.value,
-          node: selectedNodeData.tag
-        });
-        if (isConnected.value) {
-          await disconnectVPN();
-        } else {
-          await connectVPN();
-        }
-      };
-      const handleVpnStatusChange = (status) => {
-        const connected = status.connected !== void 0 ? status.connected : status.isConnected !== void 0 ? status.isConnected : false;
+      }
+      function handleVpnStatus(s) {
+        const connected = !!(s && (s.connected || s.isConnected));
         isConnected.value = connected;
         isConnecting.value = false;
-        if (connected) {
-          statusText.value = "已连接";
-          connectButtonText.value = "断开连接";
-          if (selectedNode.value !== null) {
-            const selectedNodeData = nodes.value[selectedNode.value];
-            connectionInfo.value = `${selectedNodeData.tag} · ${selectedNodeData.host}:${selectedNodeData.port}`;
+        statusText.value = s && s.message ? s.message : connected ? "已连接" : "未连接";
+        connectButtonText.value = connected ? "断开连接" : "连接VPN";
+        if (connected && selectedIndex.value !== null) {
+          const n = nodes.value[selectedIndex.value];
+          connectionInfo.value = `${n.tag} · ${n.host}:${n.port}`;
+          if (timer) {
+            clearInterval(timer);
+            timer = null;
           }
-          connectionSeconds.value = 0;
-          updateConnectionTime();
-          if (connectingInterval.value) {
-            clearInterval(connectingInterval.value);
-          }
-          connectingInterval.value = setInterval(updateConnectionTime, 1e3);
-          uni.showToast({
-            title: status.message || "VPN连接成功",
-            icon: "success",
-            duration: 2e3
-          });
+          let sec = 0;
+          connectionTime.value = "连接时间: 00:00";
+          timer = setInterval(() => {
+            sec++;
+            const mm = String(Math.floor(sec / 60)).padStart(2, "0");
+            const ss = String(sec % 60).padStart(2, "0");
+            connectionTime.value = `连接时间: ${mm}:${ss}`;
+          }, 1e3);
         } else {
-          statusText.value = status.message || "未连接";
-          connectButtonText.value = "连接VPN";
+          if (timer) {
+            clearInterval(timer);
+            timer = null;
+          }
           connectionInfo.value = "--";
           connectionTime.value = "--";
-          if (connectingInterval.value) {
-            clearInterval(connectingInterval.value);
-            connectingInterval.value = null;
-          }
-          if (status.message && status.message !== "未连接" && !status.message.includes("初始化")) {
-            uni.showToast({
-              title: status.message,
-              icon: "none",
-              duration: 2e3
-            });
-          }
         }
-      };
-      const handleVpnError = (error) => {
-        let errorMessage = "VPN连接失败";
-        if (error && typeof error === "object") {
-          errorMessage = error.message || "VPN连接失败";
+        if (s && s.status === "error" && s.message) {
+          uni.showToast({ title: s.message, icon: "none" });
         }
-        formatAppLog("error", "at pages/index/index.vue:623", "处理VPN错误:", errorMessage);
-        isConnecting.value = false;
-        isConnected.value = false;
-        if (errorMessage.includes("插件未初始化") || errorMessage.includes("插件不可用")) {
-          errorMessage = "VPN功能暂不可用，正在使用模拟模式";
-          setTimeout(async () => {
-            formatAppLog("log", "at pages/index/index.vue:634", "尝试使用模拟模式连接");
-            try {
-              const selectedNodeData = nodes.value[selectedNode.value];
-              await androidVpnManager.mockConnect(selectedNodeData);
-            } catch (mockError) {
-              formatAppLog("error", "at pages/index/index.vue:639", "模拟模式连接也失败:", mockError);
-            }
-          }, 1e3);
-        }
-        statusText.value = "连接失败";
-        connectButtonText.value = "连接VPN";
-        uni.showToast({
-          title: errorMessage,
-          icon: "none",
-          duration: 3e3
-        });
-        handleVpnStatusChange({
-          connected: false,
-          isConnected: false,
-          status: "error",
-          message: errorMessage
-        });
-      };
-      const updateConnectionTime = () => {
-        connectionSeconds.value++;
-        const hours = Math.floor(connectionSeconds.value / 3600);
-        const minutes = Math.floor(connectionSeconds.value % 3600 / 60);
-        const seconds = connectionSeconds.value % 60;
-        if (hours > 0) {
-          connectionTime.value = `连接时间: ${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
-        } else {
-          connectionTime.value = `连接时间: ${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
-        }
-      };
-      const selectNode = (index) => {
-        const node = nodes.value[index];
-        if (!node.isAvailable) {
-          uni.showToast({
-            title: "该节点不可用",
-            icon: "none"
-          });
-          return;
-        }
-        if (!node.hasAuth) {
-          uni.showToast({
-            title: "该节点缺少认证信息",
-            icon: "none"
-          });
-          return;
-        }
-        selectedNode.value = index;
-        if (isConnected.value) {
-          connectionInfo.value = `${node.tag} · ${node.host}:${node.port}`;
-        }
-        uni.showToast({
-          title: `已选择: ${node.tag}`,
-          icon: "success"
-        });
-      };
-      const toggleAppSelection = (index) => {
-        if (index === 7) {
-          selectedApps.value = [7];
-        } else {
-          if (selectedApps.value.includes(index)) {
-            selectedApps.value = selectedApps.value.filter((i) => i !== index);
-            if (selectedApps.value.length === 0) {
-              selectedApps.value = [7];
-            }
-          } else {
-            selectedApps.value = selectedApps.value.filter((i) => i !== 7);
-            selectedApps.value.push(index);
-          }
-        }
-      };
-      const getCountryFlag = (tag) => {
-        const flagMap = {
-          "广东": "🇨🇳",
-          "河间": "🇨🇳",
-          "天津": "🇨🇳",
-          "宁波": "🇨🇳",
-          "蠡县": "🇨🇳",
-          "澄海": "🇨🇳",
-          "凤翔": "🇨🇳"
-        };
-        for (const [key, flag] of Object.entries(flagMap)) {
-          if (tag.includes(key)) {
-            return flag;
-          }
-        }
-        return "🌐";
-      };
-      const formatDate = (dateString) => {
-        if (!dateString)
-          return "未知";
-        const date = new Date(dateString);
-        const now = /* @__PURE__ */ new Date();
-        const diffTime = Math.abs(now - date);
-        const diffDays = Math.ceil(diffTime / (1e3 * 60 * 60 * 24));
-        if (diffDays <= 30) {
-          return `${diffDays}天后过期`;
-        } else {
-          return `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, "0")}-${date.getDate().toString().padStart(2, "0")}`;
-        }
-      };
-      const __returned__ = { isLoggedIn, username, token, isConnected, isConnecting, statusText, connectionInfo, connectionTime, connectButtonText, selectedNode, selectedApps, nodes, connectionSeconds, connectingInterval, page, pageSize, isBottom, isLoading, apps, log, statusClass, availableNodes, setupVpn, checkLoginStatus, fetchNodes, handleAuth, connectVPN, disconnectVPN, toggleVPN, handleVpnStatusChange, handleVpnError, updateConnectionTime, selectNode, toggleAppSelection, getCountryFlag, formatDate, ref: vue.ref, computed: vue.computed, onMounted: vue.onMounted, onUnmounted: vue.onUnmounted, get onShow() {
-        return onShow;
-      }, get onReachBottom() {
-        return onReachBottom;
-      }, get onPullDownRefresh() {
-        return onPullDownRefresh;
-      }, UniIcons, get androidVpnManager() {
-        return androidVpnManager;
+      }
+      const __returned__ = { isLoggedIn, username, token, isConnected, isConnecting, statusText, connectionInfo, connectionTime, connectButtonText, nodes, selectedIndex, page, pageSize, isLoading, isBottom, get timer() {
+        return timer;
+      }, set timer(v) {
+        timer = v;
+      }, availableNodes, statusClass, checkLogin, refreshNodes, isExpired, hasExpiredDisplay, formatExpire, selectNode, handleAuth, toggleVPN, connectVPN, disconnectVPN, handleVpnStatus, ref: vue.ref, computed: vue.computed, onMounted: vue.onMounted, onUnmounted: vue.onUnmounted, get androidVpn() {
+        return mgr;
       } };
       Object.defineProperty(__returned__, "__isScriptSetup", { enumerable: false, value: true });
       return __returned__;
     }
   };
   function _sfc_render$1(_ctx, _cache, $props, $setup, $data, $options) {
+    const _component_uni_icons = resolveEasycom(vue.resolveDynamicComponent("uni-icons"), __easycom_0);
     return vue.openBlock(), vue.createElementBlock("view", { class: "container" }, [
-      vue.createCommentVNode(" 头部 "),
+      vue.createCommentVNode(" 头部：登录状态 "),
       vue.createElementVNode("view", { class: "header" }, [
         vue.createElementVNode("view", { class: "user-info" }, [
           $setup.isLoggedIn ? (vue.openBlock(), vue.createElementBlock(
@@ -1120,7 +572,7 @@ if (uni.restoreGlobal) {
           )
         ])
       ]),
-      vue.createCommentVNode(" VPN连接状态 "),
+      vue.createCommentVNode(" VPN状态卡片 "),
       vue.createElementVNode("view", { class: "vpn-status-card" }, [
         vue.createElementVNode("view", { class: "status-header" }, [
           vue.createElementVNode(
@@ -1155,9 +607,9 @@ if (uni.restoreGlobal) {
           /* TEXT */
         ),
         vue.createElementVNode("button", {
-          class: vue.normalizeClass(["btn-connect", { "connecting": $setup.isConnecting }]),
+          class: vue.normalizeClass(["btn-connect", { connecting: $setup.isConnecting }]),
           onClick: $setup.toggleVPN,
-          disabled: !$setup.isLoggedIn || $setup.availableNodes.length === 0 || $setup.selectedNode === null
+          disabled: !$setup.isLoggedIn || $setup.nodes.length === 0 || $setup.selectedIndex === null
         }, vue.toDisplayString($setup.connectButtonText), 11, ["disabled"])
       ]),
       vue.createCommentVNode(" 节点列表 "),
@@ -1166,10 +618,10 @@ if (uni.restoreGlobal) {
           vue.createElementVNode("text", { class: "section-title" }, "节点列表"),
           vue.createElementVNode("view", {
             class: "section-action",
-            onClick: $setup.fetchNodes
+            onClick: $setup.refreshNodes
           }, [
             vue.createElementVNode("text", { class: "refresh-text" }, "刷新"),
-            vue.createVNode($setup["UniIcons"], {
+            vue.createVNode(_component_uni_icons, {
               type: "refresh",
               size: "16",
               color: "#4361ee"
@@ -1192,29 +644,18 @@ if (uni.restoreGlobal) {
           (vue.openBlock(true), vue.createElementBlock(
             vue.Fragment,
             null,
-            vue.renderList($setup.nodes, (node, index) => {
+            vue.renderList($setup.nodes, (n, i) => {
               return vue.openBlock(), vue.createElementBlock("view", {
-                key: node._id,
-                class: vue.normalizeClass(["node-item", {
-                  "selected": $setup.selectedNode === index,
-                  "offline": !node.isAvailable,
-                  "no-auth": !node.hasAuth
-                }]),
-                onClick: ($event) => $setup.selectNode(index)
+                key: n._id,
+                class: vue.normalizeClass(["node-item", { "selected": $setup.selectedIndex === i, "offline": !n.status || $setup.isExpired(n), "no-auth": false }]),
+                onClick: ($event) => $setup.selectNode(i)
               }, [
                 vue.createElementVNode("view", { class: "node-info" }, [
-                  vue.createElementVNode(
-                    "view",
-                    { class: "node-flag" },
-                    vue.toDisplayString($setup.getCountryFlag(node.tag)),
-                    1
-                    /* TEXT */
-                  ),
                   vue.createElementVNode("view", { class: "node-details" }, [
                     vue.createElementVNode(
                       "text",
                       { class: "node-name" },
-                      vue.toDisplayString(node.tag),
+                      vue.toDisplayString(n.tag),
                       1
                       /* TEXT */
                     ),
@@ -1222,14 +663,14 @@ if (uni.restoreGlobal) {
                       vue.createElementVNode(
                         "text",
                         { class: "node-location" },
-                        vue.toDisplayString(node.host) + ":" + vue.toDisplayString(node.port),
+                        vue.toDisplayString(n.host) + ":" + vue.toDisplayString(n.port),
                         1
                         /* TEXT */
                       ),
                       vue.createElementVNode(
                         "text",
                         { class: "node-expire" },
-                        vue.toDisplayString(node.expireText),
+                        vue.toDisplayString($setup.formatExpire(n.expire)),
                         1
                         /* TEXT */
                       )
@@ -1241,22 +682,28 @@ if (uni.restoreGlobal) {
                     vue.createElementVNode(
                       "text",
                       {
-                        class: vue.normalizeClass(node.status ? "status-online" : "status-offline")
+                        class: vue.normalizeClass(n.status ? "status-online" : "status-offline")
                       },
-                      vue.toDisplayString(node.status ? "在线" : "离线"),
+                      vue.toDisplayString(n.status ? "在线" : "离线"),
                       3
                       /* TEXT, CLASS */
                     ),
-                    !node.hasAuth ? (vue.openBlock(), vue.createElementBlock("text", {
-                      key: 0,
-                      class: "status-noauth"
-                    }, "无认证")) : vue.createCommentVNode("v-if", true)
+                    !$setup.hasExpiredDisplay(n) ? (vue.openBlock(), vue.createElementBlock(
+                      "text",
+                      {
+                        key: 0,
+                        class: "status-noauth"
+                      },
+                      vue.toDisplayString(n.account && n.password ? "需认证" : "免认证"),
+                      1
+                      /* TEXT */
+                    )) : vue.createCommentVNode("v-if", true)
                   ]),
-                  $setup.selectedNode === index ? (vue.openBlock(), vue.createElementBlock("view", {
+                  $setup.selectedIndex === i ? (vue.openBlock(), vue.createElementBlock("view", {
                     key: 0,
                     class: "selected-indicator"
                   }, [
-                    vue.createVNode($setup["UniIcons"], {
+                    vue.createVNode(_component_uni_icons, {
                       type: "checkmark",
                       size: "16",
                       color: "#4361ee"
@@ -1276,56 +723,20 @@ if (uni.restoreGlobal) {
           ])) : vue.createCommentVNode("v-if", true)
         ])
       ]),
-      vue.createCommentVNode(" 应用选择 "),
-      vue.createElementVNode("view", { class: "section" }, [
-        vue.createElementVNode("view", { class: "section-header" }, [
-          vue.createElementVNode("text", { class: "section-title" }, "选择应用")
-        ]),
-        vue.createElementVNode("view", { class: "app-list" }, [
-          (vue.openBlock(true), vue.createElementBlock(
-            vue.Fragment,
-            null,
-            vue.renderList($setup.apps, (app, index) => {
-              return vue.openBlock(), vue.createElementBlock("view", {
-                key: index,
-                class: vue.normalizeClass(["app-item", { "selected": $setup.selectedApps.includes(index) }]),
-                onClick: ($event) => $setup.toggleAppSelection(index)
-              }, [
-                vue.createElementVNode("view", { class: "app-icon" }, [
-                  vue.createVNode($setup["UniIcons"], {
-                    type: app.icon,
-                    size: "24",
-                    color: "#4361ee"
-                  }, null, 8, ["type"])
-                ]),
-                vue.createElementVNode(
-                  "text",
-                  { class: "app-label" },
-                  vue.toDisplayString(app.name),
-                  1
-                  /* TEXT */
-                )
-              ], 10, ["onClick"]);
-            }),
-            128
-            /* KEYED_FRAGMENT */
-          ))
-        ])
-      ]),
       vue.createCommentVNode(" 使用提示 "),
       vue.createElementVNode("view", { class: "section tips-section" }, [
         vue.createElementVNode("view", { class: "section-header" }, [
           vue.createElementVNode("text", { class: "section-title" }, "使用提示")
         ]),
         vue.createElementVNode("view", { class: "tips-content" }, [
-          vue.createElementVNode("text", { class: "tip-item" }, '• 请选择状态为"在线"且有认证信息的节点'),
-          vue.createElementVNode("text", { class: "tip-item" }, "• 连接成功后，所有应用流量将通过VPN"),
-          vue.createElementVNode("text", { class: "tip-item" }, "• 首次连接需要授予VPN权限")
+          vue.createElementVNode("text", { class: "tip-item" }, "• 节点“免认证”说明可直接连接（SOCKS5 无认证）"),
+          vue.createElementVNode("text", { class: "tip-item" }, "• 首次连接会弹出 VPN 许可对话框，请允许"),
+          vue.createElementVNode("text", { class: "tip-item" }, "• 连接后可切到后台，服务会常驻")
         ])
       ])
     ]);
   }
-  const PagesIndexIndex = /* @__PURE__ */ _export_sfc(_sfc_main$2, [["render", _sfc_render$1], ["__scopeId", "data-v-1cf27b2a"], ["__file", "F:/uni-app_node/uni-app/Eaccelerate/pages/index/index.vue"]]);
+  const PagesIndexIndex = /* @__PURE__ */ _export_sfc(_sfc_main$2, [["render", _sfc_render$1], ["__scopeId", "data-v-1cf27b2a"], ["__file", "D:/uniapp_node/Eaccelerate/pages/index/index.vue"]]);
   const _imports_0 = "/static/icon.ico";
   const _sfc_main$1 = {
     __name: "login",
@@ -1334,12 +745,12 @@ if (uni.restoreGlobal) {
       const username = vue.ref("test_pan_1234");
       const password = vue.ref("123456");
       const handleLogin = async () => {
+        var _a;
         if (!username.value || !password.value) {
-          uni.showToast({
+          return uni.showToast({
             title: "请输入用户名和密码",
             icon: "none"
           });
-          return;
         }
         uni.showLoading({
           title: "登录中..."
@@ -1358,32 +769,29 @@ if (uni.restoreGlobal) {
           });
           if (res.statusCode === 200 && res.data) {
             const token = res.data.token || res.data.accessToken;
-            if (token) {
-              uni.setStorageSync("token", token);
-              uni.setStorageSync("username", username.value);
-              uni.hideLoading();
-              uni.showToast({
-                title: "登录成功",
-                icon: "success"
+            if (!token)
+              throw new Error("未返回 token");
+            uni.setStorageSync("token", token);
+            uni.setStorageSync("username", username.value);
+            uni.showToast({
+              title: "登录成功",
+              icon: "success"
+            });
+            setTimeout(() => {
+              uni.reLaunch({
+                url: "/pages/index/index"
               });
-              setTimeout(() => {
-                uni.reLaunch({
-                  url: "/pages/index/index"
-                });
-              }, 1500);
-            } else {
-              throw new Error("登录失败: 未获取到token");
-            }
+            }, 500);
           } else {
-            throw new Error("登录失败: " + (res.data.message || "未知错误"));
+            throw new Error(((_a = res.data) == null ? void 0 : _a.message) || "登录失败");
           }
-        } catch (error) {
-          uni.hideLoading();
+        } catch (e) {
           uni.showToast({
-            title: "登录失败",
+            title: e.message || "登录失败",
             icon: "none"
           });
-          formatAppLog("error", "at pages/login/login.vue:99", "登录失败:", error);
+        } finally {
+          uni.hideLoading();
         }
       };
       const __returned__ = { username, password, handleLogin, ref: vue.ref };
@@ -1446,11 +854,10 @@ if (uni.restoreGlobal) {
         vue.createElementVNode("view", { class: "login-tips" }, [
           vue.createCommentVNode(" <text>测试账号: test123 / test123</text> ")
         ])
-      ]),
-      vue.createCommentVNode(' <view class="login-footer">\r\n      <text class="footer-text">© 2025 VPN助手</text>\r\n    </view> ')
+      ])
     ]);
   }
-  const PagesLoginLogin = /* @__PURE__ */ _export_sfc(_sfc_main$1, [["render", _sfc_render], ["__scopeId", "data-v-e4e4508d"], ["__file", "F:/uni-app_node/uni-app/Eaccelerate/pages/login/login.vue"]]);
+  const PagesLoginLogin = /* @__PURE__ */ _export_sfc(_sfc_main$1, [["render", _sfc_render], ["__scopeId", "data-v-e4e4508d"], ["__file", "D:/uniapp_node/Eaccelerate/pages/login/login.vue"]]);
   __definePage("pages/index/index", PagesIndexIndex);
   __definePage("pages/login/login", PagesLoginLogin);
   const _sfc_main = {
@@ -1481,7 +888,7 @@ if (uni.restoreGlobal) {
       return __returned__;
     }
   };
-  const App = /* @__PURE__ */ _export_sfc(_sfc_main, [["__file", "F:/uni-app_node/uni-app/Eaccelerate/App.vue"]]);
+  const App = /* @__PURE__ */ _export_sfc(_sfc_main, [["__file", "D:/uniapp_node/Eaccelerate/App.vue"]]);
   function createApp() {
     const app = vue.createVueApp(App);
     return {

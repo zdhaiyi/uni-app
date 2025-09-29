@@ -1,0 +1,28 @@
+{
+	"name": "MyVpnPlugin",
+	"id": "MyVpnPlugin",
+	"version": "1.0.0",
+	"description": "自定义VPN插件",
+	"_dp_type": "nativeplugin",
+	"_dp_nativeplugin": {
+		"android": {
+			"integrateType": "module",
+			"plugins": [{
+				"type": "module",
+				"name": "MyVpnPlugin",
+				"class": "com.mycompany.vpn.MyVpnPlugin"
+			}],
+			"hooks": [],
+			"abis": ["armeabi-v7a", "arm64-v8a"],
+			"minSdkVersion": 21,
+			"useAndroidX": true,
+			"permissions": [
+				"<uses-permission android:name=\"android.permission.INTERNET\"/>",
+				"<uses-permission android:name=\"android.permission.ACCESS_NETWORK_STATE\"/>",
+				"<uses-permission android:name=\"android.permission.ACCESS_WIFI_STATE\"/>",
+				"<uses-permission android:name=\"android.permission.BIND_VPN_SERVICE\"/>",
+				"<uses-permission android:name=\"android.permission.FOREGROUND_SERVICE\"/>"
+			]
+		}
+	}
+}
