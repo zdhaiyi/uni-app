@@ -3,7 +3,7 @@
     "appid" : "__UNI__F09418E",
     "description" : "安全稳定的VPN连接助手",
     "versionName" : "1.0.0",
-    "versionCode" : "100",
+    "versionCode" : 250,
     "transformPx" : false,
     "app-plus" : {
         "uniStatistics" : {

@@ -2,7 +2,7 @@
     "version" : "1.0",
     "configurations" : [
         {
-            "customPlaygroundType" : "local",
+            "customPlaygroundType" : "device",
             "localRepoPath" : "D:/uniapp_node/Eaccelerate",
             "packageName" : "com.mycompany.vpn",
             "playground" : "custom",
