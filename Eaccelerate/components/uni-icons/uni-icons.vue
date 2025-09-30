@@ -30,7 +30,7 @@ defineProps({
 })
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
 .uni-icons {
   display: inline-flex;
   align-items: center;

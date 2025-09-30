@@ -1,11 +1,14 @@
 {
-  "nativePlugins": [
+  "plugins": [
     {
+      "type": "module",
       "name": "MyVpnPlugin",
-      "class": "com.mycompany.vpn.MyVpnPlugin",
-      "type": "module"
+      "class": "com.mycompany.vpn.MyVpnPlugin"
     }
-  ]
+  ],
+  "integrateType": "aar",
+  "minSdkVersion": 21,
+  "useAndroidX": true,
+  "abis": ["armeabi-v7a", "arm64-v8a"],
+  "hooks": []
 }
-
-

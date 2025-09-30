@@ -1,0 +1,367 @@
+/**
+ * 这里是uni-app内置的常用样式变量
+ *
+ * uni-app 官方扩展插件及插件市场（https://ext.dcloud.net.cn）上很多三方插件均使用了这些样式变量
+ * 如果你是插件开发者，建议你使用scss预处理，并在插件代码中直接使用这些变量（无需 import 这个文件），方便用户通过搭积木的方式开发整体风格一致的App
+ *
+ */
+/**
+ * 如果你是App开发者（插件使用者），你可以通过修改这些变量来定制自己的插件主题，实现自定义主题功能
+ *
+ * 如果你的项目同样使用了scss预处理，你也可以直接在你的 scss 代码中使用如下变量，同时无需 import 这个文件
+ */
+/* 颜色变量 */
+/* 颜色变量 */
+/* 尺寸变量 */
+/* 混合宏 */
+/* 全局样式 */
+body[data-v-f218fb61] {
+  background-color: #f8f9fa;
+  font-size: 0.875rem;
+  color: #333;
+}
+.container[data-v-f218fb61] {
+  padding: 0.9375rem;
+}
+.card[data-v-f218fb61] {
+  background: #fff;
+  border-radius: 0.625rem;
+  box-shadow: 0 0.125rem 0.375rem rgba(0, 0, 0, 0.05);
+  margin-bottom: 0.9375rem;
+  overflow: hidden;
+}
+.btn[data-v-f218fb61] {
+  padding: 0.625rem 0.9375rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  text-align: center;
+  border: none;
+  outline: none;
+}
+.btn-primary[data-v-f218fb61] {
+  background: #4361ee;
+  color: #fff;
+}
+.btn-disabled[data-v-f218fb61] {
+  background: #ccc;
+  color: #fff;
+}
+.uni-icons[data-v-f218fb61] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+/**
+ * 这里是uni-app内置的常用样式变量
+ *
+ * uni-app 官方扩展插件及插件市场（https://ext.dcloud.net.cn）上很多三方插件均使用了这些样式变量
+ * 如果你是插件开发者，建议你使用scss预处理，并在插件代码中直接使用这些变量（无需 import 这个文件），方便用户通过搭积木的方式开发整体风格一致的App
+ *
+ */
+/**
+ * 如果你是App开发者（插件使用者），你可以通过修改这些变量来定制自己的插件主题，实现自定义主题功能
+ *
+ * 如果你的项目同样使用了scss预处理，你也可以直接在你的 scss 代码中使用如下变量，同时无需 import 这个文件
+ */
+/* 颜色变量 */
+/* 颜色变量 */
+/* 尺寸变量 */
+/* 混合宏 */
+/* 全局样式 */
+body[data-v-1cf27b2a] {
+  background-color: #f8f9fa;
+  font-size: 0.875rem;
+  color: #333;
+}
+.container[data-v-1cf27b2a] {
+  padding: 0.9375rem;
+}
+.card[data-v-1cf27b2a] {
+  background: #fff;
+  border-radius: 0.625rem;
+  box-shadow: 0 0.125rem 0.375rem rgba(0, 0, 0, 0.05);
+  margin-bottom: 0.9375rem;
+  overflow: hidden;
+}
+.btn[data-v-1cf27b2a] {
+  padding: 0.625rem 0.9375rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  text-align: center;
+  border: none;
+  outline: none;
+}
+.btn-primary[data-v-1cf27b2a] {
+  background: #4361ee;
+  color: #fff;
+}
+.btn-disabled[data-v-1cf27b2a] {
+  background: #ccc;
+  color: #fff;
+}
+.container[data-v-1cf27b2a] {
+  padding: 0.625rem;
+  background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+  min-height: 100vh;
+}
+.header[data-v-1cf27b2a] {
+  padding: 0.9375rem;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 0.5rem;
+  margin-bottom: 0.9375rem;
+  -webkit-backdrop-filter: blur(10px);
+          backdrop-filter: blur(10px);
+  display: flex;
+  flex-direction: column;
+}
+.header .user-info[data-v-1cf27b2a] {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.625rem;
+  width: 100%;
+}
+.header .user-info .welcome-text[data-v-1cf27b2a] {
+  color: white;
+  font-size: 1rem;
+  flex: 1;
+  margin-right: 0.625rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.header .user-info .btn-auth[data-v-1cf27b2a] {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: none;
+  border-radius: 1.5625rem;
+  padding: 0.3125rem 0.625rem;
+  font-size: 0.75rem;
+  flex-shrink: 0;
+}
+.vpn-status-card[data-v-1cf27b2a] {
+  background: white;
+  border-radius: 0.625rem;
+  padding: 1.25rem;
+  margin-bottom: 0.9375rem;
+  box-shadow: 0 0.3125rem 0.9375rem rgba(0, 0, 0, 0.1);
+}
+.vpn-status-card .status-header[data-v-1cf27b2a] {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.625rem;
+}
+.vpn-status-card .status-header .status-indicator[data-v-1cf27b2a] {
+  width: 0.625rem;
+  height: 0.625rem;
+  border-radius: 50%;
+  margin-right: 0.46875rem;
+}
+.vpn-status-card .status-header .status-indicator.connected[data-v-1cf27b2a] {
+  background: #4ade80;
+}
+.vpn-status-card .status-header .status-indicator.connecting[data-v-1cf27b2a] {
+  background: #fbbf24;
+}
+.vpn-status-card .status-header .status-indicator.disconnected[data-v-1cf27b2a] {
+  background: #f87171;
+}
+.vpn-status-card .status-header .status-text[data-v-1cf27b2a] {
+  font-size: 1rem;
+  font-weight: bold;
+}
+.vpn-status-card .connection-info[data-v-1cf27b2a] {
+  font-size: 0.875rem;
+  color: #666;
+  margin-bottom: 0.3125rem;
+}
+.vpn-status-card .connection-time[data-v-1cf27b2a] {
+  font-size: 0.75rem;
+  color: #999;
+  margin-bottom: 0.9375rem;
+}
+.vpn-status-card .btn-connect[data-v-1cf27b2a] {
+  background: linear-gradient(to right, #4361ee, #3a0ca3);
+  color: white;
+  border: none;
+  border-radius: 1.5625rem;
+  padding: 0.625rem 1.25rem;
+  font-size: 1rem;
+}
+.vpn-status-card .btn-connect[data-v-1cf27b2a]:disabled {
+  background: #ccc;
+}
+.vpn-status-card .btn-connect.connecting[data-v-1cf27b2a] {
+  background: #fbbf24;
+}
+.section[data-v-1cf27b2a] {
+  background: white;
+  border-radius: 0.625rem;
+  padding: 0.9375rem;
+  margin-bottom: 0.9375rem;
+  box-shadow: 0 0.3125rem 0.9375rem rgba(0, 0, 0, 0.1);
+}
+.section .section-header[data-v-1cf27b2a] {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.625rem;
+}
+.section .section-header .section-title[data-v-1cf27b2a] {
+  font-size: 1rem;
+  font-weight: bold;
+  color: #3a0ca3;
+}
+.section .section-header .section-action[data-v-1cf27b2a] {
+  display: flex;
+  align-items: center;
+}
+.section .section-header .section-action .refresh-text[data-v-1cf27b2a] {
+  font-size: 0.75rem;
+  color: #4361ee;
+  margin-right: 0.3125rem;
+}
+
+/* 节点统计信息 */
+.nodes-stats[data-v-1cf27b2a] {
+  margin-bottom: 0.625rem;
+  padding: 0 0.3125rem;
+}
+.stats-text[data-v-1cf27b2a] {
+  font-size: 0.75rem;
+  color: #666;
+}
+.node-list[data-v-1cf27b2a] {
+  max-height: 12.5rem;
+}
+.node-list .node-item[data-v-1cf27b2a] {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.625rem;
+  border-bottom: 0.03125rem solid #f0f0f0;
+}
+.node-list .node-item[data-v-1cf27b2a]:last-child {
+  border-bottom: none;
+}
+.node-list .node-item.selected[data-v-1cf27b2a] {
+  background: #f0f5ff;
+  border-radius: 0.375rem;
+}
+.node-list .node-item.offline[data-v-1cf27b2a] {
+  opacity: 0.6;
+}
+.node-list .node-item.no-auth[data-v-1cf27b2a] {
+  border-left: 0.25rem solid #fbbf24;
+}
+.node-list .node-item .node-info[data-v-1cf27b2a] {
+  display: flex;
+  align-items: center;
+  flex: 1;
+}
+.node-list .node-item .node-info .node-flag[data-v-1cf27b2a] {
+  font-size: 1.25rem;
+  margin-right: 0.625rem;
+}
+.node-list .node-item .node-info .node-details[data-v-1cf27b2a] {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+.node-list .node-item .node-info .node-details .node-name[data-v-1cf27b2a] {
+  font-size: 0.875rem;
+  font-weight: bold;
+  margin-bottom: 0.15625rem;
+}
+.node-list .node-item .node-info .node-details .node-meta[data-v-1cf27b2a] {
+  display: flex;
+  flex-direction: column;
+  gap: 0.09375rem;
+}
+.node-list .node-item .node-info .node-details .node-location[data-v-1cf27b2a] {
+  font-size: 0.75rem;
+  color: #999;
+}
+.node-list .node-item .node-info .node-details .node-expire[data-v-1cf27b2a] {
+  font-size: 0.6875rem;
+  color: #f59e0b;
+}
+.node-list .node-item .node-status[data-v-1cf27b2a] {
+  display: flex;
+  align-items: center;
+}
+.node-list .node-item .node-status .status-indicators[data-v-1cf27b2a] {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.15625rem;
+}
+.node-list .node-item .node-status .status-indicators .status-online[data-v-1cf27b2a] {
+  color: #4ade80;
+  font-weight: 600;
+}
+.node-list .node-item .node-status .status-indicators .status-offline[data-v-1cf27b2a] {
+  color: #9ca3af;
+}
+.node-list .node-item .node-status .status-indicators .status-noauth[data-v-1cf27b2a] {
+  font-size: 0.625rem;
+  color: #f87171;
+  background: #fef2f2;
+  padding: 0.125rem 0.25rem;
+  border-radius: 0.25rem;
+}
+.node-list .node-item .node-status .selected-indicator[data-v-1cf27b2a] {
+  margin-left: 0.3125rem;
+}
+.node-list .empty-state[data-v-1cf27b2a] {
+  text-align: center;
+  padding: 1.25rem;
+  color: #999;
+}
+.app-list[data-v-1cf27b2a] {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.625rem;
+}
+.app-list .app-item[data-v-1cf27b2a] {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.625rem;
+  border-radius: 0.5rem;
+  background: #f9f9f9;
+  transition: all 0.3s;
+}
+.app-list .app-item.selected[data-v-1cf27b2a] {
+  background: #f0f5ff;
+  box-shadow: 0 0 0 0.0625rem #4361ee;
+}
+.app-list .app-item .app-icon[data-v-1cf27b2a] {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.625rem;
+  background: #e6eeff;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 0.46875rem;
+}
+.app-list .app-item .app-label[data-v-1cf27b2a] {
+  font-size: 0.75rem;
+  text-align: center;
+}
+
+/* 使用提示 */
+.tips-section[data-v-1cf27b2a] {
+  background: #f0f5ff;
+}
+.tips-content[data-v-1cf27b2a] {
+  padding: 0 0.3125rem;
+}
+.tip-item[data-v-1cf27b2a] {
+  display: block;
+  font-size: 0.75rem;
+  color: #666;
+  margin-bottom: 0.3125rem;
+  line-height: 1.5;
+}

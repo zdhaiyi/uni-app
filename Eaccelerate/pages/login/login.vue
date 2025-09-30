@@ -100,7 +100,6 @@
 		margin-bottom: 80rpx;
 
 		.title-container {
-			display: flex;
 			justify-content: center;
 			align-items: center;
 			margin-bottom: 20rpx;
